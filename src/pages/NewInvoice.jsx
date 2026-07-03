@@ -229,8 +229,8 @@ export default function NewInvoice() {
         {/* Body */}
 
         {/* {invoice.simplifiedView ? <NewInvoiceSimplified /> : <NewInvoiceFull />} */}
-        {/* {invoice.simplifiedView ? <NewInvoiceSimplified /> : <NewInvoiceFull />} */}
-        {invoice.simplifiedView ? <NewInvoiceFull /> : <NewInvoiceSimplified />}
+        {invoice.simplifiedView ? <NewInvoiceSimplified /> : <NewInvoiceFull />}
+        {/* {invoice.simplifiedView ? <NewInvoiceFull /> : <NewInvoiceSimplified />} */}
         {/* Footer */}
       </div>
     </div>

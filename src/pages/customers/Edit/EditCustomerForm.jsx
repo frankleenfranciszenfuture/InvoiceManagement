@@ -1,9 +1,11 @@
 import React from "react";
 import { useSelector, useDispatch } from "react-redux";
-import BottomActionBar from "../../../invoice/src/components/BottomActionBar";
-import { closeModal } from "../slices/uiSlice";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect } from "react";
+import BottomActionBar from "../../../components/BottomActionBar";
+import { closeModal } from "../../../slices/uiSlice";
 import { toast } from "react-toastify";
-import store from "../store";
+import store from "../../../store";
 import {
   addCustomer,
   editCustomer,
@@ -17,7 +19,8 @@ import {
   setAddressField,
   copyBillingToShipping,
   setCurrency,
-} from "../slices/customerSlice";
+  setSelectedCustomer,
+} from "../../../slices/customerSlice";
 
 
 import {
@@ -34,6 +37,7 @@ import {
   User,
   Users,
   Users2Icon,
+  SquarePenIcon,
 } from "lucide-react";
 
 const TwitterIcon = ({ className }) => (
@@ -59,6 +63,7 @@ const Label = ({ children, required }) => (
   </label>
 );
 
+
 const AddressColumn = ({
   title,
   address,
@@ -70,21 +75,7 @@ const AddressColumn = ({
     dispatch(setAddressField({ addressType, field, value: e.target.value }));
   };
 
-  const errors = useSelector((state) => state.customer.errors);
 
-  const country = [
-
-    "India",
-    "USA",
-    "UK",
-    "UAE",
-    "AUS",
-    "NEWZLAND",
-    "PAKISTAN",
-    "JAPAN",
-    "CHINA"
-
-  ]
   return (
     <div className="flex-1 min-w-[300px]">
       <h3 className="text-[15px] font-medium text-gray-800 mb-5">
@@ -109,7 +100,7 @@ const AddressColumn = ({
           <Label>Attention</Label>
           <input
             type="text"
-            value={address.attention}
+            value={address?.attention || ""}
             onChange={handleAddrChange("attention")}
             className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
           />
@@ -119,30 +110,16 @@ const AddressColumn = ({
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Country/Region</Label>
           <div className="relative">
+
             <select
               value={address.country}
-              onChange={(e) => {
-                dispatch(
-                  setField({
-                    field: "country",
-                    value: e.target.value,
-                  }),
-                );
-                dispatch(clearFieldError("country"));
-              }}
-              className={`w-full rounded px-3 py-2 border text-gray-500 ${errors.country
-                ? "border-red-500 bg-red-50"
-                : "border-gray-300"
-                }`}
+              onChange={handleAddrChange("country")}
+              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-400 appearance-none bg-white outline-none focus:border-blue-400"
             >
-              <option value="">Select country</option>
-
-
-              {country.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
-                </option>
-              ))}
+              <option value="">Select Country</option>
+              <option value="India">India</option>
+              <option value="United States">United States</option>
+              <option value="United Kingdom">United Kingdom</option>
             </select>
             <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
@@ -154,14 +131,14 @@ const AddressColumn = ({
           <div className="space-y-3">
             <textarea
               placeholder="Street 1"
-              value={address.street1}
+              value={address?.street1 || ""}
               onChange={handleAddrChange("street1")}
               rows={2}
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400 resize-y"
             />
             <textarea
               placeholder="Street 2"
-              value={address.street2}
+              value={address?.street2 || ""}
               onChange={handleAddrChange("street2")}
               rows={2}
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400 resize-y"
@@ -174,7 +151,7 @@ const AddressColumn = ({
           <Label>City</Label>
           <input
             type="text"
-            value={address.city}
+            value={address?.city || ""}
             onChange={handleAddrChange("city")}
             className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
           />
@@ -185,7 +162,7 @@ const AddressColumn = ({
           <Label>State</Label>
           <div className="relative">
             <select
-              value={address.state}
+              value={address?.state || ""}
               onChange={handleAddrChange("state")}
               className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-400 appearance-none bg-white outline-none focus:border-blue-400"
             >
@@ -203,7 +180,7 @@ const AddressColumn = ({
           <Label>Pin Code</Label>
           <input
             type="text"
-            value={address.pinCode}
+            value={address?.pinCode || ""}
             onChange={handleAddrChange("pinCode")}
             className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
           />
@@ -215,7 +192,7 @@ const AddressColumn = ({
           <div className="flex border border-gray-300 rounded overflow-hidden focus-within:border-blue-400">
             <div className="relative">
               <select
-                value={address.phoneCode}
+                value={address?.phoneCode || "+91"}
                 onChange={handleAddrChange("phoneCode")}
                 className="appearance-none bg-gray-50 border-r border-gray-300 pl-2 pr-5 py-1.5 text-sm outline-none"
               >
@@ -227,7 +204,7 @@ const AddressColumn = ({
             </div>
             <input
               type="text"
-              value={address.phone}
+              value={address?.phone || ""}
               onChange={handleAddrChange("phone")}
               className="flex-1 px-2 py-1.5 text-sm outline-none w-0"
             />
@@ -239,7 +216,7 @@ const AddressColumn = ({
           <Label>Fax Number</Label>
           <input
             type="text"
-            value={address.faxNumber}
+            value={address?.faxNumber || ""}
             onChange={handleAddrChange("faxNumber")}
             className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
           />
@@ -249,48 +226,50 @@ const AddressColumn = ({
   );
 };
 
-export default function NewCustomerForm() {
+export default function EditCustomerForm() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { id } = useParams();
+
+
+  const { selectedCustomer, errors } = useSelector(
+    (state) => state.customer
+  );
+
+
   const customer = useSelector((state) => state.customer);
   const currency = useSelector((state) => state.customer?.currency || "");
   const customerLanguage = useSelector(
     (state) => state.customerLanguage?.customerLanguage || "",
   );
 
-  const errors = useSelector((state) => state.customer.errors);
+
 
   const changeTab = (tab) => {
-    dispatch(validateCustomer());
+    if (!selectedCustomer?.id) {
+      return;
+    }
 
     const validationErrors = {};
 
-    if (!customer.firstName.trim()) {
+    if (!selectedCustomer.firstName?.trim()) {
       validationErrors.firstName = "Please enter First Name";
     }
 
-    if (!customer.lastName.trim()) {
+    if (!selectedCustomer.lastName?.trim()) {
       validationErrors.lastName = "Please enter Last Name";
     }
 
-    if (!customer.companyName.trim()) {
+    if (!selectedCustomer.companyName?.trim()) {
       validationErrors.companyName = "Please enter Company Name";
     }
 
-    if (!customer.displayName.trim()) {
+    if (!selectedCustomer.displayName?.trim()) {
       validationErrors.displayName = "Please enter Display Name";
     }
 
-    if (Object.keys(validationErrors).length > 0) {
-      toast.error(Object.values(validationErrors)[0], {
-        position: "top-right",
-        autoClose: 3000,
-        style: {
-          background: "#dc2626", // Red
-          color: "#fff",
-          fontWeight: "500",
-        },
-      });
-
+    if (Object.keys(validationErrors).length) {
+      toast.error(Object.values(validationErrors)[0]);
       return;
     }
 
@@ -299,14 +278,16 @@ export default function NewCustomerForm() {
 
   const handleChange = (field) => (e) => {
     dispatch(
-      setField({
+      updateSelectedCustomerField({
         field,
         value: e.target.value,
-      }),
+      })
     );
 
     dispatch(clearFieldError(field));
   };
+
+
   const tabs = [
     "Other Details",
     "Address",
@@ -380,25 +361,29 @@ export default function NewCustomerForm() {
   };
 
   const handleEdit = async () => {
-    try {
-      await dispatch(updateCustomer(customer)).unwrap();
+    dispatch(validateCustomer());
 
-      await dispatch(
-        loadCustomers({
-          page: 0,
-          size: 5,
-          search: "",
-          sortBy: "displayName",
-          direction: "asc",
-        }),
-      );
+    const hasErrors =
+      Object.keys(store.getState().customer.errors).length > 0;
+
+    if (hasErrors) return;
+
+    try {
+      await dispatch(saveCustomer()).unwrap();
 
       toast.success("Customer updated successfully!");
 
+      await dispatch(loadCustomers({
+        page: 0,
+        size: 5,
+        search: "",
+        sortBy: "displayName",
+        direction: "asc",
+      }));
+
       dispatch(closeModal());
     } catch (error) {
-      toast.error(error || "Failed to update customer");
-      console.error("Update failed:", error);
+      toast.error(error);
     }
   };
 
@@ -439,23 +424,15 @@ export default function NewCustomerForm() {
       {/* Form Container Wrapper allowing separate inner scrolling */}
       <div className="flex-1 min-h-0 bg-white overflow-y-auto">
         <div className="px-6 py-5 max-w-30xl w-full ">
-          <h1 className="flex items-center gap-2 text-xl font-medium text-gray-800 mb-4">
-            <Users2Icon className="w-6 h-6" />
-            <span>New Customer</span>
-          </h1>
-          {/* GST Profile banner */}
-          <div className="flex items-center gap-2 bg-blue-50 border border-blue-100 rounded px-3 py-2 mb-6 text-sm">
-            <FileSpreadsheet className="w-4 h-4 text-blue-500" />
-            <span className="text-gray-600">
-              Profill Customer details from the GST portal using the Customer's
-              GSTIN.
-            </span>
-            <a href="#" className="text-blue-600 font-medium hover:underline">
-              Profill &gt;
-            </a>
+          <div className="w-full border-b border-gray-100">
+            <h1 className="flex items-center gap-2 text-xl font-medium text-gray-800 mt-2 mb-4">
+              <SquarePenIcon className="w-6 h-6" />
+              <span>Edit Customer</span>
+            </h1>
           </div>
 
-          <div className="space-y-4">
+
+          <div className="mt-6 space-y-4">
             {/* Customer Type */}
             <div className="grid grid-cols-[160px_1fr] items-center">
               <Label>
@@ -509,12 +486,12 @@ export default function NewCustomerForm() {
                 </div>
                 <div className="flex-1">
                   <input
-                    value={customer.firstName}
-                    placeholder="FirstName"
+                    type="text"
+                    value={selectedCustomer?.firstName || ""}
                     onChange={handleChange("firstName")}
-                    className={`w-full rounded px-3 py-2 border  ${errors.firstName
+                    className={`w-full rounded px-3 py-2 border ${errors.firstName
                       ? "border-red-500 bg-red-50"
-                      : "border-gray-400"
+                      : "border-gray-300"
                       }`}
                   />
 
@@ -528,7 +505,7 @@ export default function NewCustomerForm() {
 
                 <div className="flex-1">
                   <input
-                    value={customer.lastName}
+                    value={selectedCustomer?.lastName || ""}
                     placeholder="LastName"
                     onChange={handleChange("lastName")}
                     className={`w-full rounded px-3 py-2 border  ${errors.lastName
@@ -553,7 +530,7 @@ export default function NewCustomerForm() {
 
               <div className="max-w-md w-full">
                 <input
-                  value={customer.companyName}
+                  value={selectedCustomer?.companyName || ""}
                   onChange={handleChange("companyName")}
                   className={`w-full rounded px-3 py-2 border outline-none
         ${errors.companyName
@@ -578,7 +555,7 @@ export default function NewCustomerForm() {
               </Label>
               <div className="relative max-w-md w-full">
                 <input
-                  value={customer.displayName}
+                  value={selectedCustomer?.displayName}
                   onChange={handleChange("displayName")}
                   className={`w-full rounded px-3 py-2 border ${errors.displayName
                     ? "border-red-500 bg-red-50"
@@ -603,7 +580,7 @@ export default function NewCustomerForm() {
               <div className="max-w-md w-full">
                 <div className="relative">
                   <select
-                    value={customer.currency}
+                    value={selectedCustomer?.currency}
                     onChange={(e) => {
                       dispatch(setCurrency(e.target.value));
                       dispatch(clearFieldError("currency"));
@@ -642,7 +619,7 @@ export default function NewCustomerForm() {
 
                 <input
                   type="email"
-                  value={customer.email}
+                  value={selectedCustomer?.email}
                   onChange={handleChange("email")}
                   className={`w-full rounded border py-2 pl-10 pr-3 ${errors.email
                     ? "border-red-500 bg-red-50"
@@ -662,7 +639,7 @@ export default function NewCustomerForm() {
                 <div className="flex flex-1 border border-gray-300 rounded overflow-hidden focus-within:border-blue-400">
                   <div className="relative">
                     <select
-                      value={customer.workPhoneCode}
+                      value={selectedCustomer?.workPhoneCode}
                       onChange={handleChange("workPhoneCode")}
                       className="appearance-none bg-gray-50 border-r border-gray-300 pl-2 pr-5 py-1.5 text-sm outline-none"
                     >
@@ -673,7 +650,7 @@ export default function NewCustomerForm() {
                     <ChevronDown className="w-3 h-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                   <input
-                    value={customer.workPhone}
+                    value={selectedCustomer?.workPhone}
                     onChange={handleChange("workPhone")}
                     className={`flex-1 px-2 py-2 ${errors.workPhone ? "bg-red-50" : ""
                       }`}
@@ -682,7 +659,7 @@ export default function NewCustomerForm() {
                 <div className="flex flex-1 border border-gray-300 rounded overflow-hidden focus-within:border-blue-400">
                   <div className="relative">
                     <select
-                      value={customer.mobileCode}
+                      value={selectedCustomer?.mobileCode}
                       onChange={handleChange("mobileCode")}
                       className="appearance-none bg-gray-50 border-r border-gray-300 pl-2 pr-5 py-1.5 text-sm outline-none"
                     >
@@ -693,7 +670,7 @@ export default function NewCustomerForm() {
                     <ChevronDown className="w-3 h-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                   </div>
                   <input
-                    value={customer.mobile}
+                    value={selectedCustomer?.mobile}
                     onChange={handleChange("mobile")}
                     className={`flex-1 px-2 py-2 ${errors.mobile ? "bg-red-50" : ""
                       }`}
@@ -709,7 +686,7 @@ export default function NewCustomerForm() {
               </Label>
               <div className="relative max-w-md w-full">
                 <select
-                  value={customer.customerLanguage}
+                  value={selectedCustomer.customerLanguage}
                   onChange={(e) => {
                     dispatch(
                       setField({
@@ -719,14 +696,11 @@ export default function NewCustomerForm() {
                     );
                     dispatch(clearFieldError("customerLanguage"));
                   }}
-                  className={`w-full rounded px-3 py-2 border text-gray-500 ${errors.customerLanguage
+                  className={`w-full rounded px-3 py-2 border ${errors.customerLanguage
                     ? "border-red-500 bg-red-50"
                     : "border-gray-300"
                     }`}
                 >
-                  <option value="">Select Language</option>
-
-
                   {languages.map((lang) => (
                     <option key={lang} value={lang}>
                       {lang}
@@ -753,8 +727,9 @@ export default function NewCustomerForm() {
                     }`}
                 >
                   {tab}
+
                   {customer.activeTab === tab && (
-                    <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-blue-600 rounded-t" />
+                    <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
               ))}
@@ -771,7 +746,7 @@ export default function NewCustomerForm() {
                 </Label>
                 <input
                   type="text"
-                  value={customer.pan}
+                  value={selectedCustomer.pan}
                   onChange={handleChange("pan")}
                   className="max-w-md w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
                 />
@@ -782,7 +757,7 @@ export default function NewCustomerForm() {
                 <Label>Payment Terms</Label>
                 <div className="relative max-w-md w-full">
                   <select
-                    value={customer.paymentTerms}
+                    value={selectedCustomer.paymentTerms}
                     onChange={handleChange("paymentTerms")}
                     className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-700 appearance-none bg-white outline-none focus:border-blue-400"
                   >
@@ -803,7 +778,7 @@ export default function NewCustomerForm() {
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
-                    checked={customer.enablePortal}
+                    checked={selectedCustomer.enablePortal}
                     onChange={() => dispatch(toggleEnablePortal())}
                     className="w-4 h-4 rounded border-gray-300 text-blue-600 accent-blue-600"
                   />
@@ -843,7 +818,7 @@ export default function NewCustomerForm() {
                   <input
                     type="text"
                     placeholder="ex: www.zylker.com"
-                    value={customer.websiteUrl}
+                    value={selectedCustomer.websiteUrl}
                     onChange={handleChange("websiteUrl")}
                     className="w-full border border-gray-300 rounded pl-8 pr-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400"
                   />
@@ -855,7 +830,7 @@ export default function NewCustomerForm() {
                 <Label>Department</Label>
                 <input
                   type="text"
-                  value={customer.department}
+                  value={selectedCustomer.department}
                   onChange={handleChange("department")}
                   className="max-w-md w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
                 />
@@ -866,7 +841,7 @@ export default function NewCustomerForm() {
                 <Label>Designation</Label>
                 <input
                   type="text"
-                  value={customer.designation}
+                  value={selectedCustomer.designation}
                   onChange={handleChange("designation")}
                   className="max-w-md w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
                 />
@@ -882,7 +857,7 @@ export default function NewCustomerForm() {
                     </div>
                     <input
                       type="text"
-                      value={customer.twitter}
+                      value={selectedCustomer.twitter}
                       onChange={handleChange("twitter")}
                       className="flex-1 px-2 py-1.5 text-sm outline-none w-0"
                     />
@@ -900,7 +875,7 @@ export default function NewCustomerForm() {
                   </div>
                   <input
                     type="text"
-                    value={customer.skype}
+                    value={selectedCustomer.skype}
                     onChange={handleChange("skype")}
                     className="flex-1 px-2 py-1.5 text-sm outline-none w-0"
                   />
@@ -917,7 +892,7 @@ export default function NewCustomerForm() {
                     </div>
                     <input
                       type="text"
-                      value={customer.facebook}
+                      value={selectedCustomer.facebook}
                       onChange={handleChange("facebook")}
                       className="flex-1 px-2 py-1.5 text-sm outline-none w-0"
                     />
@@ -935,16 +910,17 @@ export default function NewCustomerForm() {
               <div className="flex flex-wrap gap-10 lg:gap-20">
                 <AddressColumn
                   title="Billing Address"
-                  address={customer.billingAddress}
+                  address={selectedCustomer?.billingAddress}
                   addressType="billingAddress"
                   dispatch={dispatch}
+                  showCopyLink={false}
                 />
                 <AddressColumn
                   title="Shipping Address"
-                  address={customer.shippingAddress}
+                  address={selectedCustomer?.shippingAddress}
                   addressType="shippingAddress"
                   dispatch={dispatch}
-                  showCopyLink
+                  showCopyLink={true}
                 />
               </div>
 

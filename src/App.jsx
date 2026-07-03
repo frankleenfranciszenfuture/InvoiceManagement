@@ -17,6 +17,7 @@ import InvoiceDashboard from "./pages/InvoiceDashboard";
 import InvoiceDash from "./pages/InvoiceDash";
 import CustomerDash from "./pages/customers/CustomerDash";
 import CreateCustomerModal from "./pages/customers/Createcustomermodal";
+import EditCustomerForm from "./pages/customers/Edit/EditCustomerForm";
 
 function App() {
   return (
@@ -48,6 +49,7 @@ function App() {
           {/* customers ListView */}
 
           <Route path="/customers/:id" element={<CustomerDash />} />
+          <Route path="/customers/edit/:id" element={<EditCustomerForm />} />
         </Route>
 
         {/* 404 */}

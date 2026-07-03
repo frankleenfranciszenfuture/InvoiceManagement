@@ -19,11 +19,8 @@ export const getCustomerById = createAsyncThunk(
   "customers/getCustomerById",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await api.fetchCustomerById(id);
-      return res.data.data;
+      return await api.fetchCustomerById(id);
     } catch (error) {
-      console.error(error);
-
       return rejectWithValue(error.message);
     }
   },
@@ -290,8 +287,12 @@ const customerSlice = createSlice({
 
     setAddressField: (state, action) => {
       const { addressType, field, value } = action.payload;
-      state[addressType][field] = value;
+      if (!state.selectedCustomer[addressType]) {
+        state.selectedCustomer[addressType] = {};
+      }
+      state.selectedCustomer[addressType][field] = value;
     },
+
     setCurrency: (state, action) => {
       state.currency = action.payload;
     },
@@ -426,6 +427,7 @@ const customerSlice = createSlice({
       // getCustomerById
       .addCase(getCustomerById.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
 
       .addCase(getCustomerById.fulfilled, (state, action) => {
@@ -434,12 +436,9 @@ const customerSlice = createSlice({
       })
 
       .addCase(getCustomerById.rejected, (state, action) => {
-        console.log("Rejected:", action.payload.data);
-
         state.loading = false;
-        state.error = action.payload.data;
+        state.error = action.payload;
       })
-
       .addCase(saveCustomer.fulfilled, (state, action) => {
         console.log("saveCustomer payload:", action.payload);
 
