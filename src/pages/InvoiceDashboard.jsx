@@ -1,7 +1,16 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import BottomActionBar from "../../../invoice/src/components/BottomActionBar";
 import InvTab from "../pages/InvTab";
+import Navbar from "../components/Navbar";
+import NavbarInvoice from "../components/NavbarInvoice";
+import BottomActionBar from "../../../invoice/src/components/BottomActionBar";
+
+
+import {
+  loadCustomers,
+  loadInvoices,
+} from "../slices/invoiceSlice";
+
 import {
   Search,
   RotateCcw,
@@ -17,14 +26,24 @@ import {
   UserCircle,
   Plus,
 } from "lucide-react";
-import Navbar from "../components/Navbar";
-import NavbarInvoice from "../components/NavbarInvoice";
+
 
 export default function InvoiceDashboard() {
   const dispatch = useDispatch();
-  const invoiceState = useSelector((state) => state.invoice);
 
-  const invoices = invoiceState.customers || [];
+  const {
+    invoices = [],
+    loading,
+    page,
+    pageSize,
+    totalPages,
+  } = useSelector((state) => state.invoice);
+
+
+  useEffect(() => {
+    dispatch(loadCustomers({ page, size: pageSize }));
+    dispatch(loadInvoices({ page, size: pageSize }));
+  }, [dispatch, page, pageSize]);
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-[13px] overflow-hidden">
@@ -33,7 +52,11 @@ export default function InvoiceDashboard() {
         <div className="px-2 py-5 max-w-30xl w-full ">
           <NavbarInvoice />
           <>
-            {invoices?.length > 0 ? (
+            {loading ? (
+              <div className="min-h-full flex items-center justify-center text-gray-500 mt-30">
+                Loading invoices...
+              </div>
+            ) : invoices.length > 0 ? (
               <InvTab />
             ) : (
               <div className="min-h-full flex flex-col items-center justify-center gap-3 px-4">

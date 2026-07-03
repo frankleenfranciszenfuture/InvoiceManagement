@@ -6,8 +6,9 @@ import { toast } from "react-toastify";
 import store from "../store";
 import {
   addCustomer,
+  editCustomer,
+  removeCustomer,
   loadCustomers,
-  setCurrentPage,
   setField,
   validateCustomer,
   clearFieldError,
@@ -16,8 +17,8 @@ import {
   setAddressField,
   copyBillingToShipping,
   setCurrency,
-  setCustomerLanguage,
 } from "../slices/customerSlice";
+
 
 import {
   Search,

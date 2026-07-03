@@ -15,43 +15,23 @@ import toast from "react-hot-toast";
 export default function CustomerTable() {
   const dispatch = useDispatch();
 
-  // const customerState = useSelector((state) => state.customer);
-  // const { page, pageSize } = useSelector((state) => state.customer);
-  // console.log("Customer State:", customerState);
-
-  // const customers = customerState.customers || [];
-
-  const { customers, loading, error, page, pageSize, totalElements } =
-    useSelector((state) => state.customer);
+  const {
+    customers,
+    loading,
+    error,
+    page,
+    pageSize,
+    totalPages,
+    totalElements,
+  } = useSelector((state) => state.customer);
 
   useEffect(() => {
+    // Now this correctly uses the imported Thunk from your slice file!
     dispatch(loadCustomers({ page, size: pageSize }));
   }, [dispatch, page, pageSize]);
 
-  // const startIndex = (page - 1) * pageSize;
-  // const currentCustomers = customers.slice(startIndex, startIndex + pageSize);
 
-  // const totalPages = Math.ceil(customers.length / pageSize);
-
-  // const handleViewCustomer = async (id) => {
-  //   try {
-  //     await dispatch(getCustomerById(id)).unwrap();
-
-  //     dispatch(
-  //       openModal({
-  //         type: "viewCustomer",
-  //       }),
-  //     );
-  //   } catch (err) {
-  //     console.error(err);
-  //     toast.error("Failed to load customer");
-  //   }
-  // };
-
-  const startIndex = (page - 1) * pageSize;
-  const currentCustomers = customers.slice(startIndex, startIndex + pageSize);
-
-  const totalPages = Math.ceil(customers.length / pageSize);
+  const currentCustomers = customers || [];
 
   const navigate = useNavigate();
 
@@ -106,6 +86,7 @@ export default function CustomerTable() {
   }
 
   if (loading) return <p>Loading...</p>;
+
   if (error) return <p className="text-red-500">{error}</p>;
   if (!customers.length) {
     return (
@@ -130,9 +111,8 @@ export default function CustomerTable() {
               ].map((h) => (
                 <th
                   key={h}
-                  className={`px-4 py-3 font-medium text-sm text-gray-500 uppercase ${
-                    h === "Actions" ? "text-right" : "text-left"
-                  }`}
+                  className={`px-4 py-3 font-medium text-sm text-gray-500 uppercase ${h === "Actions" ? "text-right" : "text-left"
+                    }`}
                 >
                   {h}
                 </th>

@@ -8,8 +8,12 @@ import NewInvoiceFull from "../pages/invoice/NewInvoiceFull";
 import NewInvoiceSimplified from "./invoice/NewInvoiceSimlified";
 
 import {
+  loadCustomers,
+  setField,
   setCustomerName,
+  setSalesPersonName,
   setInvoiceNumber,
+  setOrderNumber,
   setInvoiceDate,
   setTerms,
   setDueDate,
@@ -30,7 +34,9 @@ import {
   setActiveItemId,
   setShowSaveMenu,
   toggleSaveMenu,
-} from "../slices/invSlice";
+  setOpenSalesPerson,
+  setSalesPersonSearch,
+} from "../slices/invoiceSlice";
 
 import {
   Search,
@@ -60,35 +66,58 @@ export default function NewInvoice() {
   const dispatch = useDispatch();
 
   const customerDropdownRef = useRef(null);
+  const salesPersonDropdownRef = useRef(null);
   const itemDropdownRef = useRef(null);
   const saveMenuRef = useRef(null);
 
-  const customer = useSelector((state) => state.customers);
-  const invoice = useSelector((state) => state.invoice);
+  const invoice = useSelector((state) => state?.invoice ?? {});
+  const items = invoice?.items ?? [];
+
+
+
+
+  // NOTE: these previously read from state.customer.customers / state.salesPersons,
+  // which don't exist in the store — the invoice slice is where this data actually
+  // lives (see invoiceSlice.js). That mismatch, combined with calling .toLowerCase()
+  // directly instead of through a null-safe helper, is what caused the crash.
+  const customers = useSelector(
+    (state) => state.invoice.customers || []
+  );
+
+
+  const salesPersons = useSelector((state) => state?.invoice?.salesPersons ?? []);
+  const itemMaster = useSelector((state) => state?.invoice?.itemMaster ?? []);
+
   const total = useSelector(selectTotal);
 
   const openItemDropdown = useSelector(
-    (state) => state.invoice.openItemDropdown,
+    (state) => state.invoice?.openItemDropdown
   );
 
   const openRowItemDropdown = useSelector(
-    (state) => state.invoice.openRowItemDropdown,
+    (state) => state.invoice?.openRowItemDropdown
   );
 
-  const activeItemId = useSelector((state) => state.invoice.activeItemId);
+  const activeItemId = useSelector((state) => state.invoice?.activeItemId);
 
-  const editingItemId = useSelector((state) => state.invoice.editingItemId);
+  const editingItemId = useSelector((state) => state.invoice?.editingItemId);
 
-  const itemSearch = useSelector((state) => state.invoice.itemSearch);
+  const itemSearch = useSelector((state) => state.invoice?.itemSearch || "");
 
-  const itemMaster = useSelector((state) => state.invoice.itemMaster);
+  const customerSearch = useSelector(
+    (state) => state.invoice?.customerSearch || ""
+  );
 
-  const customerSearch = useSelector((state) => state.invoice.customerSearch);
+  const salesPersonSearch = useSelector(
+    (state) => state.invoice?.salesPersonSearch || ""
+  );
 
-  const openCustomer = useSelector((state) => state.invoice.openCustomer);
-  const customers = useSelector((state) => state.customer.customers);
+  const openCustomer = useSelector((state) => state.invoice?.openCustomer);
+  const openSalesPerson = useSelector(
+    (state) => state.invoice?.openSalesPerson
+  );
 
-  const showSaveMenu = useSelector((state) => state.invoice.showSaveMenu);
+  const showSaveMenu = useSelector((state) => state.invoice?.showSaveMenu);
 
   const [showSummary, setShowSummary] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
@@ -96,17 +125,32 @@ export default function NewInvoice() {
 
   const fmt = (n) => parseFloat(n || 0).toFixed(2);
 
+  // Null-safe helpers so a missing customerName / salesPersonName / itemName
+  // never throws when filtering — this is what was missing before.
+  const safeText = (v) => (v ?? "").toString().toLowerCase();
+  const safeNumber = (v) => Number(v ?? 0);
+
   //customers
-  const filteredCustomers = invoice.customers.filter((customer) =>
-    customer.customerName.toLowerCase().includes(customerSearch.toLowerCase()),
+  const filteredCustomers = customers.filter((customer) =>
+    (customer.displayName || "")
+      .toLowerCase()
+      .includes((customerSearch || "").toLowerCase())
   );
 
+  //sales
+  const filteredSalesPersons = (salesPersons ?? []).filter((s) =>
+    (s?.salesPersonName ?? "")
+      .toString()
+      .toLowerCase()
+      .includes((salesPersonSearch ?? "").toLowerCase())
+  );
   //items
-
-  const filteredItems = itemMaster.filter((item) =>
-    item.itemName.toLowerCase().includes(itemSearch.toLowerCase()),
+  const filteredItems = (itemMaster ?? []).filter((item) =>
+    (item?.itemName ?? "")
+      .toString()
+      .toLowerCase()
+      .includes((itemSearch ?? "").toLowerCase())
   );
-  console.log(invoice.items);
 
   const handleTermsChange = (term) => {
     dispatch(setTerms(term));
@@ -122,6 +166,14 @@ export default function NewInvoice() {
     dispatch(setDueDate(invoiceDate.toISOString().split("T")[0]));
   };
 
+  console.log("Customers:", customers);
+  console.log("Invoice customers:", invoice.customers);
+  console.log("Filtered:", filteredCustomers);
+
+  useEffect(() => {
+    dispatch(loadCustomers());
+  }, [dispatch]);
+
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -129,6 +181,13 @@ export default function NewInvoice() {
         !customerDropdownRef.current.contains(e.target)
       ) {
         dispatch(setOpenCustomer(false));
+      }
+
+      if (
+        salesPersonDropdownRef.current &&
+        !salesPersonDropdownRef.current.contains(e.target)
+      ) {
+        dispatch(setOpenSalesPerson(false));
       }
 
       if (
@@ -159,12 +218,17 @@ export default function NewInvoice() {
     }
   };
 
+  const handleChange = (field) => (e) => {
+    dispatch(setField({ field, value: e.target.value }));
+  };
+
   return (
     <div className="flex h-full bg-gray-50 font-sans text-[13px] overflow-hidden">
       {/* Form Container Wrapper allowing separate inner scrolling */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Body */}
 
+        {/* {invoice.simplifiedView ? <NewInvoiceSimplified /> : <NewInvoiceFull />} */}
         {/* {invoice.simplifiedView ? <NewInvoiceSimplified /> : <NewInvoiceFull />} */}
         {invoice.simplifiedView ? <NewInvoiceFull /> : <NewInvoiceSimplified />}
         {/* Footer */}

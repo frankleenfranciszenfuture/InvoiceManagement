@@ -1,6 +1,6 @@
 import { configureStore } from "@reduxjs/toolkit";
 import dashboardReducer from "./slices/dashboardSlice";
-import invoiceReducer from "./slices/invSlice";
+import invoiceReducer from "./slices/invoiceSlice";
 import customerReducer from "./slices/customerSlice";
 import uiReducer from "./slices/uiSlice";
 import authReducer from "./slices/authSlice";

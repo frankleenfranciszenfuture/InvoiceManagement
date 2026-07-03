@@ -1,12 +1,14 @@
 import React from "react";
 import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import BottomActionBar from "../../../../invoice/src/components/BottomActionBar";
 import DatePicker from "react-datepicker";
 import {
+  loadCustomers,
+  setField,
   setCustomerName,
   setSalesPersonName,
   setInvoiceNumber,
+  setOrderNumber,
   setInvoiceDate,
   setTerms,
   setDueDate,
@@ -29,7 +31,7 @@ import {
   toggleSaveMenu,
   setOpenSalesPerson,
   setSalesPersonSearch,
-} from "../../slices/invSlice";
+} from "../../slices/invoiceSlice";
 
 import {
   Search,
@@ -53,7 +55,9 @@ import {
   ChevronUp,
   GripHorizontal,
   Grip,
+  MoreHorizontal
 } from "lucide-react";
+import InvoiceAddPaymentCard from "./InvoiceAddPaymentCard";
 
 export default function NewInvoiceFull() {
   const dispatch = useDispatch();
@@ -63,65 +67,88 @@ export default function NewInvoiceFull() {
   const itemDropdownRef = useRef(null);
   const saveMenuRef = useRef(null);
 
-  const customer = useSelector((state) => state.customers);
-  const customers = useSelector((state) => state.customer.customers);
+  const invoice = useSelector((state) => state?.invoice ?? {});
+  const items = invoice?.items ?? [];
 
-  const salesPersons = useSelector((state) => state.salesPersons); //salesperson
 
-  const invoice = useSelector((state) => state.invoice);
+
+
+  // NOTE: these previously read from state.customer.customers / state.salesPersons,
+  // which don't exist in the store — the invoice slice is where this data actually
+  // lives (see invoiceSlice.js). That mismatch, combined with calling .toLowerCase()
+  // directly instead of through a null-safe helper, is what caused the crash.
+  const customers = useSelector(
+    (state) => state.invoice.customers || []
+  );
+
+
+  const salesPersons = useSelector((state) => state?.invoice?.salesPersons ?? []);
+  const itemMaster = useSelector((state) => state?.invoice?.itemMaster ?? []);
+
   const total = useSelector(selectTotal);
 
   const openItemDropdown = useSelector(
-    (state) => state.invoice.openItemDropdown,
+    (state) => state.invoice?.openItemDropdown
   );
 
   const openRowItemDropdown = useSelector(
-    (state) => state.invoice.openRowItemDropdown,
+    (state) => state.invoice?.openRowItemDropdown
   );
 
-  const activeItemId = useSelector((state) => state.invoice.activeItemId);
+  const activeItemId = useSelector((state) => state.invoice?.activeItemId);
 
-  const editingItemId = useSelector((state) => state.invoice.editingItemId);
+  const editingItemId = useSelector((state) => state.invoice?.editingItemId);
 
-  const itemSearch = useSelector((state) => state.invoice.itemSearch);
+  const itemSearch = useSelector((state) => state.invoice?.itemSearch || "");
 
-  const itemMaster = useSelector((state) => state.invoice.itemMaster);
-
-  const customerSearch = useSelector((state) => state.invoice.customerSearch);
+  const customerSearch = useSelector(
+    (state) => state.invoice?.customerSearch || ""
+  );
 
   const salesPersonSearch = useSelector(
-    (state) => state.invoice.salesPersonSearch,
+    (state) => state.invoice?.salesPersonSearch || ""
   );
 
-  const openCustomer = useSelector((state) => state.invoice.openCustomer);
-  const openSalesPerson = useSelector((state) => state.invoice.openSalesPerson);
+  const openCustomer = useSelector((state) => state.invoice?.openCustomer);
+  const openSalesPerson = useSelector(
+    (state) => state.invoice?.openSalesPerson
+  );
 
-  const showSaveMenu = useSelector((state) => state.invoice.showSaveMenu);
+  const showSaveMenu = useSelector((state) => state.invoice?.showSaveMenu);
 
   const [showSummary, setShowSummary] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
   const [showGateway, setShowGateway] = useState(false);
+  const [receivedPayment, setReceivedPayment] = useState(false);
 
   const fmt = (n) => parseFloat(n || 0).toFixed(2);
 
+  // Null-safe helpers so a missing customerName / salesPersonName / itemName
+  // never throws when filtering — this is what was missing before.
+  const safeText = (v) => (v ?? "").toString().toLowerCase();
+  const safeNumber = (v) => Number(v ?? 0);
+
   //customers
-  const filteredCustomers = invoice.customers.filter((customer) =>
-    customer.customerName.toLowerCase().includes(customerSearch.toLowerCase()),
+  const filteredCustomers = customers.filter((customer) =>
+    (customer.displayName || "")
+      .toLowerCase()
+      .includes((customerSearch || "").toLowerCase())
   );
 
   //sales
-  const filteredsalesPersons = invoice.salesPersons.filter((salesPerson) =>
-    salesPerson.salesPersonName
+  const filteredSalesPersons = (salesPersons ?? []).filter((s) =>
+    (s?.salesPersonName ?? "")
+      .toString()
       .toLowerCase()
-      .includes(salesPersonSearch.toLowerCase()),
+      .includes((salesPersonSearch ?? "").toLowerCase())
   );
-
   //items
-
-  const filteredItems = itemMaster.filter((item) =>
-    item.itemName.toLowerCase().includes(itemSearch.toLowerCase()),
+  const filteredItems = (itemMaster ?? []).filter((item) =>
+    (item?.itemName ?? "")
+      .toString()
+      .toLowerCase()
+      .includes((itemSearch ?? "").toLowerCase())
   );
-  console.log(invoice.items);
 
   const handleTermsChange = (term) => {
     dispatch(setTerms(term));
@@ -136,6 +163,12 @@ export default function NewInvoiceFull() {
 
     dispatch(setDueDate(invoiceDate.toISOString().split("T")[0]));
   };
+
+  console.log(invoice.customers[0]);
+
+  useEffect(() => {
+    dispatch(loadCustomers());
+  }, [dispatch]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -185,6 +218,40 @@ export default function NewInvoiceFull() {
     dispatch(setField({ field, value: e.target.value }));
   };
 
+  // const [payments, setPayments] = useState([
+  //   {
+  //     paymentMode: "Cash",
+  //     amount: 0,
+  //   },
+  // ]);
+
+  // const addSplitPayment = () => {
+  //   setPayments([
+  //     ...payments,
+  //     {
+  //       paymentMode: "Cash",
+  //       amount: 0,
+  //     },
+  //   ]);
+  // };
+
+  // const deletePaymentRow = (index) => {
+  //   setPayments(payments.filter((_, i) => i !== index));
+  // };
+
+  // const updatePayment = (index, field, value) => {
+  //   const updated = [...payments];
+  //   updated[index][field] = value;
+  //   setPayments(updated);
+  // };
+
+  // const totalReceived = payments.reduce(
+  //   (sum, p) => sum + Number(p.amount || 0),
+  //   0
+  // );
+
+  // const balance = total - totalReceived;
+
   return (
     <div className="flex h-full bg-gray-50 font-sans text-[13px] overflow-hidden">
       {/* Form Container Wrapper allowing separate inner scrolling */}
@@ -198,7 +265,7 @@ export default function NewInvoiceFull() {
               </div>
 
               <h1 className="text-lg font-semibold text-gray-800">
-                New Invoice
+                New Invoice All
               </h1>
 
               <div className="flex items-center gap-2 ml-4 shrink-0">
@@ -209,14 +276,12 @@ export default function NewInvoiceFull() {
                 <button
                   type="button"
                   onClick={() => dispatch(toggleSimplifiedView())}
-                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${
-                    invoice.simplifiedView ? "bg-blue-500" : "bg-gray-300"
-                  }`}
+                  className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full p-0.5 transition-colors duration-200 ${invoice.simplifiedView ? "bg-blue-500" : "bg-gray-300"
+                    }`}
                 >
                   <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
-                      invoice.simplifiedView ? "translate-x-4" : "translate-x-0"
-                    }`}
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${invoice.simplifiedView ? "translate-x-4" : "translate-x-0"
+                      }`}
                   />
                 </button>
               </div>
@@ -294,20 +359,21 @@ export default function NewInvoiceFull() {
                           <button
                             key={customer.id}
                             onClick={() => {
-                              dispatch(setCustomerName(customer.customerName));
-                              dispatch(
-                                setCustomerSearch(customer.customerName),
-                              );
+                              dispatch(setCustomerName(customer.displayName));
+                              dispatch(setCustomerSearch(customer.displayName));
                               dispatch(setOpenCustomer(false));
+
+                              dispatch(setCustomerId(customer.id));
                             }}
                             className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
                           >
                             <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-medium">
-                              {customer.customerName?.charAt(0)}
+                              {customer.displayName?.charAt(0)}
                             </div>
 
                             <div>
-                              <p>{customer.customerName}</p>
+                              <p>{customer.displayName}</p>
+
 
                               <p className="text-xs opacity-80">
                                 {customer.email}
@@ -317,9 +383,6 @@ export default function NewInvoiceFull() {
                         ))}
                       </div>
                       {/* Footer */}
-                      {/* <button className="w-full px-4 py-3 border border-gray-200 text-left text-blue-600 hover:bg-white-50">
-                      + New Customer
-                    </button> */}
                       <div className="flex items-center gap-2 flex-1 border border-gray-200  hover:bg-blue-100  cursor-pointer">
                         <div className="ml-3 mt-2 mb-2 px-3 py-2 h-7 rounded-full bg-blue-500 border border-gray-400 flex items-center justify-center flex-shrink-0">
                           <Plus
@@ -376,14 +439,9 @@ export default function NewInvoiceFull() {
               <div className="relative w-[330px]">
                 <input
                   value={invoice.orderNumber}
-                  onChange={(e) => dispatch(setInvoiceNumber(e.target.value))}
+                  onChange={(e) => dispatch(setOrderNumber(e.target.value))}
                   className="w-full border border-gray-300 rounded px-3 py-2 pr-8"
                 />
-
-                {/* <Settings
-                  size={14}
-                  className="absolute right-3 top-3 text-blue-500"
-                /> */}
               </div>
             </div>
             {/* Invoice Date + Terms + Due Date */}
@@ -483,17 +541,13 @@ export default function NewInvoiceFull() {
                       </div>
                       {/* Customer List */}
                       <div className="max-h-60 overflow-y-auto">
-                        {filteredsalesPersons.map((salesPerson) => (
+                        {filteredSalesPersons.map((salesPerson) => (
                           <button
                             key={salesPerson.id}
                             onClick={() => {
                               dispatch(
-                                dispatch(
-                                  dispatch(
-                                    setSalesPersonName(
-                                      salesPerson.salesPersonName,
-                                    ),
-                                  ),
+                                setSalesPersonName(
+                                  salesPerson.salesPersonName,
                                 ),
                               );
 
@@ -522,9 +576,6 @@ export default function NewInvoiceFull() {
                       </div>
 
                       {/* Footer */}
-                      {/* <button className="w-full px-4 py-3 border border-gray-200 text-left text-blue-600 hover:bg-white-50">
-                      + New Customer
-                    </button> */}
                       <div className="flex items-center gap-2 flex-1 border border-gray-200  hover:bg-blue-100  cursor-pointer">
                         <div className="ml-3 mt-2 mb-2 px-3 py-2 h-7 rounded-full bg-blue-500 border border-gray-400 flex items-center justify-center flex-shrink-0">
                           <Plus
@@ -582,15 +633,13 @@ export default function NewInvoiceFull() {
                 </tr>
               </thead>
               <tbody>
-                {invoice.items.map((item) => (
+                {items.map((item) => (
                   <tr
                     key={item.id}
                     className="border-b border-gray-100 hover:bg-gray-50 group"
                   >
                     <td className="px-3 py-3 text-gray-300">
                       <div className="flex flex-col gap-0.5">
-                        {/* <div className="w-3 h-0.5 bg-current rounded" /> */}
-
                         <Grip />
                       </div>
                     </td>
@@ -702,8 +751,8 @@ export default function NewInvoiceFull() {
 
                                       // Auto add next blank row
                                       const isLastRow =
-                                        invoice.items[invoice.items.length - 1]
-                                          .id === item.id;
+                                        items[items.length - 1]?.id ===
+                                        item.id;
 
                                       if (isLastRow) {
                                         dispatch(addItem());
@@ -716,7 +765,7 @@ export default function NewInvoiceFull() {
                                     </div>
 
                                     <div className=" cursor-pointer text-sm opacity-80">
-                                      Rate: ₹{product.rate.toFixed(2)}
+                                      Rate: ₹{safeNumber(product.rate).toFixed(2)}
                                     </div>
                                   </div>
                                 ))}
@@ -735,7 +784,7 @@ export default function NewInvoiceFull() {
                     <td className="px-4 py-3">
                       <input
                         type="number"
-                        value={item.quantity}
+                        value={safeNumber(item.quantity)}
                         onChange={(e) =>
                           dispatch(
                             updateItem({
@@ -751,7 +800,7 @@ export default function NewInvoiceFull() {
                     <td className="px-4 py-3">
                       <input
                         type="number"
-                        value={item.rate}
+                        value={safeNumber(item.rate)}
                         onChange={(e) =>
                           dispatch(
                             updateItem({
@@ -768,7 +817,7 @@ export default function NewInvoiceFull() {
                       {fmt(item.amount)}
                     </td>
                     <td className="px-2 py-3">
-                      {invoice.items.length > 1 && (
+                      {items.length > 1 && (
                         <button
                           onClick={() => dispatch(removeItem(item.id))}
                           className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
@@ -824,52 +873,45 @@ export default function NewInvoiceFull() {
             {/* Total block */}
             <div className="flex-1 max-w-sm ml-auto">
               <div className="border border-gray-100 mb-2 px-2">
-                {showSummary && (
-                  <div className="mt-2 text-sm text-gray-600 space-y-1 border-b border-gray-200 pt-2 py-2">
-                    <div className="flex justify-between">
-                      <span>Sub Total</span>
-                      <span>₹{fmt(total)}</span>
-                    </div>
-                    <div className="flex justify-between mt-6">
-                      <span>Discount</span>
-                      <span>₹{fmt(total)}</span>
-                    </div>
-
-                    <div className="flex justify-between mt-6">
-                      <div className="flex gap-2">
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="salesType"
-                            value="Business"
-                            // checked={customer.customerType === "Business"}
-                            onChange={handleChange("salesType")}
-                            className="w-4 h-4 text-blue-600 accent-blue-600"
-                          />
-                          <span>TDS</span>
-                        </label>
-
-                        <label className="flex items-center gap-1.5 cursor-pointer">
-                          <input
-                            type="radio"
-                            name="salesType"
-                            value="Business"
-                            // checked={customer.customerType === "Business"}
-                            onChange={handleChange("salesType")}
-                            className="w-4 h-4 text-blue-600 accent-blue-600"
-                          />
-                          <span>TCS</span>
-                        </label>
-                      </div>
-                      <span>₹{fmt(total)}</span>
-                    </div>
-
-                    {/* <div className="flex justify-between font-semibold">
-                      <span>Total</span>
-                      <span>₹{fmt(total)}</span>
-                    </div> */}
+                {/* {showSummary && ( */}
+                <div className="mt-2 text-sm text-gray-600 space-y-1 border-b border-gray-200 pt-2 py-2">
+                  <div className="flex justify-between">
+                    <span>Sub Total</span>
+                    <span>₹{fmt(total)}</span>
                   </div>
-                )}
+                  <div className="flex justify-between mt-6">
+                    <span>Discount</span>
+                    <span>₹{fmt(total)}</span>
+                  </div>
+
+                  <div className="flex justify-between mt-6">
+                    <div className="flex gap-2">
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="salesType"
+                          value="Business"
+                          onChange={handleChange("salesType")}
+                          className="w-4 h-4 text-blue-600 accent-blue-600"
+                        />
+                        <span>TDS</span>
+                      </label>
+
+                      <label className="flex items-center gap-1.5 cursor-pointer">
+                        <input
+                          type="radio"
+                          name="salesType"
+                          value="Business"
+                          onChange={handleChange("salesType")}
+                          className="w-4 h-4 text-blue-600 accent-blue-600"
+                        />
+                        <span>TCS</span>
+                      </label>
+                    </div>
+                    <span>₹{fmt(total)}</span>
+                  </div>
+                </div>
+                {/* )} */}
                 <div className="flex justify-between items-center py-3">
                   <span className="text-sm font-semibold text-gray-700">
                     Total (₹)
@@ -883,7 +925,7 @@ export default function NewInvoiceFull() {
                 onClick={() => setShowSummary(!showSummary)}
                 className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 w-full justify-end"
               >
-                {showSummary ? "Hide" : "Show"} Total Summary
+                {/* {showSummary ? "Hide" : "Show"} Total Summary */}
                 <ChevronDown
                   size={14}
                   className={`transition-transform ${showSummary ? "rotate-180" : ""}`}
@@ -894,27 +936,16 @@ export default function NewInvoiceFull() {
 
           {/* Terms and Payment links */}
           <div className="space-y-3 mb-8">
-            {!showTerms ? (
-              <button
-                onClick={() => setShowTerms(true)}
-                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
-              >
-                <div className="w-5 h-5 rounded-full border-2 border-blue-500 flex items-center justify-center">
-                  <Plus size={12} />
-                </div>
-                Add Terms and conditions
-              </button>
-            ) : (
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Terms and Conditions
-                </label>
-                <textarea
-                  rows={3}
-                  className="w-full max-w-sm border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
-                />
-              </div>
-            )}
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">
+                Terms and Conditions
+              </label>
+              <textarea
+                rows={3}
+                className="w-full max-w-sm border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
+              />
+            </div>
+
             <button
               onClick={() => setShowGateway(!showGateway)}
               className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
@@ -924,68 +955,87 @@ export default function NewInvoiceFull() {
               </div>
               Add Payment Gateway
             </button>
+
+            {/* payment */}
+
+            <InvoiceAddPaymentCard />
           </div>
         </div>
 
         {/* Footer */}
+        <div className="border-t border-gray-200 bg-white px-6 py-4">
+          <div className="flex items-center justify-between">
 
-        <div className="border-t border-gray-200 bg-white px-6 py-4 flex items-center gap-3 z-30 shrink-0">
-          <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
-            Save as Draft
-          </button>
+            {/* Left Side - Buttons */}
+            <div className="flex items-center gap-3">
+              <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
+                Save as Draft
+              </button>
 
-          <div ref={saveMenuRef} className="relative flex items-center">
-            <button className="bg-blue-500 text-white px-4 h-10 rounded-l">
-              Save and Send
-            </button>
+              <div ref={saveMenuRef} className="relative flex items-center">
 
-            <button
-              onClick={() => dispatch(toggleSaveMenu())}
-              className="bg-blue-500 text-white w-9 h-10 rounded-r border-l border-blue-400 flex items-center justify-center"
-            >
-              <ChevronUp size={12} className="items-center" />
-            </button>
 
-            {showSaveMenu && (
-              <div
-                className="
-                absolute
-                bottom-full
-                mb-2
-                right-0
-                w-56
-                bg-white
-                rounded-lg
-                shadow-xl
-                border
-                border-gray-200
-                z-[9999]
-                overflow-hidden
-              "
-              >
-                <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
-                  <FileSpreadsheet size={16} />
-                  Save and Print
+                <button className="bg-blue-500 text-white px-4 h-10 rounded-l">
+                  Save and Send
                 </button>
 
-                <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
-                  <UploadCloud size={16} />
-                  Save and Share
+                <button
+                  onClick={() => dispatch(toggleSaveMenu())}
+                  className="bg-blue-500 text-white w-9 h-10 rounded-r border-l border-blue-400 flex items-center justify-center"
+                >
+                  <ChevronUp size={12} />
                 </button>
 
-                <button className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
-                  <Mail size={16} />
-                  Save and Send Later
-                </button>
+                {showSaveMenu && (
+                  <div className="absolute bottom-full left-0 mb-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
+                    <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
+                      <FileSpreadsheet size={16} />
+                      Save and Print
+                    </button>
+
+                    <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
+                      <UploadCloud size={16} />
+                      Save and Share
+                    </button>
+
+                    <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
+                      <Mail size={16} />
+                      Save and Send Later
+                    </button>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+              <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
+                Cancel
+              </button>
+            </div>
 
-          <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
-            Cancel
-          </button>
+            {/* Right Side - Total */}
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-left">
+                <div className="text-sm font-semibold text-gray-800">
+                  Total Amount:
+                  <span className="ml-3 text-lg font-bold text-gray-900">
+                    ₹ {fmt(total)}
+                  </span>
+                </div>
+
+                <div className="text-sm text-gray-500">
+                  Total Quantity:
+                  <span className="ml-3 font-medium">
+                    {items.reduce(
+                      (sum, item) => sum + Number(item.quantity || 0),
+                      0
+                    )}
+                  </span>
+                </div>
+              </div>
+
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </div >
+    </div >
+
   );
 }

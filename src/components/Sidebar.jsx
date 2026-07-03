@@ -2,6 +2,7 @@ import React from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { toggleSidebar } from "../slices/uiSlice";
+import { resetInvoice } from "../slices/invoiceSlice";
 import {
   Sparkles,
   ChevronRight,
@@ -140,8 +141,11 @@ export default function Sidebar() {
                   <button
                     type="button"
                     onClick={(e) => {
-                      e.preventDefault(); // stop NavLink navigation
-                      e.stopPropagation(); // stop bubbling
+                      e.preventDefault();
+                      e.stopPropagation();
+
+                      dispatch(resetInvoice()); // 🔥 ADD THIS
+
                       navigate(addTo);
                     }}
                     className="

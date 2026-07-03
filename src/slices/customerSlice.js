@@ -4,28 +4,13 @@ import { toast } from "react-toastify";
 
 export const loadCustomers = createAsyncThunk(
   "customers/loadAll",
-  async (
-    {
-      page = 0,
-      size = 5,
-      search = "",
-      sortBy = "displayName",
-      direction = "asc",
-    },
-    { rejectWithValue },
-  ) => {
+  async (params, { rejectWithValue }) => {
     try {
-      const response = await api.fetchCustomers({
-        page,
-        size,
-        search,
-        sortBy,
-        direction,
-      });
+      const response = await api.fetchCustomers(params);
 
-      return response;
+      return response.data; // IMPORTANT: keep full backend response
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || error.message);
+      return rejectWithValue(error.message);
     }
   },
 );
@@ -34,11 +19,8 @@ export const getCustomerById = createAsyncThunk(
   "customers/getCustomerById",
   async (id, { rejectWithValue }) => {
     try {
-      const customer = await api.fetchCustomerById(id);
-
-      console.log("Customer API:", customer);
-
-      return customer;
+      const res = await api.fetchCustomerById(id);
+      return res.data.data;
     } catch (error) {
       console.error(error);
 
@@ -417,30 +399,28 @@ const customerSlice = createSlice({
 
   extraReducers: (builder) => {
     builder
+
       .addCase(loadCustomers.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
 
+      // ✅ ONLY ONE fulfilled
       .addCase(loadCustomers.fulfilled, (state, action) => {
         state.loading = false;
+        const data = action.payload || {}; // action.payload IS already the interior data block
 
-        const data = action.payload.data;
-
-        state.customers = data.content;
-        state.page = data.page;
-        state.pageSize = data.size;
-        state.totalElements = data.totalElements;
-        state.totalPages = data.totalPages;
+        // Use optional chaining or defaults for the assignments
+        state.customers = data.content || [];
+        // state.page = data.page || 0;
+        // state.pageSize = data.size || 10;
+        state.totalElements = data.totalElements || 0;
+        state.totalPages = data.totalPages || 0;
       })
-
+      // ✅ ONLY ONE rejected
       .addCase(loadCustomers.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      })
-
-      .addCase(addCustomer.fulfilled, (state, action) => {
-        state.customers.unshift(action.payload);
       })
 
       // getCustomerById
