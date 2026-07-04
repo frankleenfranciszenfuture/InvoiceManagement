@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { Toaster } from "react-hot-toast";
 import "react-toastify/dist/ReactToastify.css";
 
 import Login from "./pages/Login";
@@ -18,10 +18,21 @@ import InvoiceDash from "./pages/InvoiceDash";
 import CustomerDash from "./pages/customers/CustomerDash";
 import CreateCustomerModal from "./pages/customers/Createcustomermodal";
 import EditCustomerForm from "./pages/customers/Edit/EditCustomerForm";
+import { toast } from "react-toastify";
 
 function App() {
   return (
     <BrowserRouter>
+
+      {/* <button
+        onClick={() => {
+          console.log("clicked");
+          toast.success("Hello");
+        }}
+      >
+        Test
+      </button> */}
+
       <Routes>
         {/* Default Route */}
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -38,7 +49,8 @@ function App() {
           }
         >
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/customers" element={<CustomerDashboard />} />
+          <Route path="/customers/:status" element={<CustomerDashboard />} />
+          <Route path="/customers" element={<Navigate to="/customers/all" replace />} />
           <Route path="/invoices" element={<InvoiceDashboard />} />
           <Route path="/customers/new" element={<NewCustomerForm />} />
           <Route path="/invoices/new" element={<NewInvoice />} />
@@ -48,7 +60,7 @@ function App() {
 
           {/* customers ListView */}
 
-          <Route path="/customers/:id" element={<CustomerDash />} />
+          <Route path="/customers/view/:id" element={<CustomerDash />} />
           <Route path="/customers/edit/:id" element={<EditCustomerForm />} />
         </Route>
 
@@ -57,15 +69,23 @@ function App() {
       </Routes>
 
       {/* Toast Container */}
-      <ToastContainer
+      <Toaster
         position="top-right"
-        autoClose={3000}
-        hideProgressBar={false}
-        newestOnTop
-        closeOnClick
-        pauseOnHover
-        draggable
-        theme="colored"
+        toastOptions={{
+          duration: 3000,
+          success: {
+            style: {
+              background: "#16a34a",
+              color: "#fff",
+            },
+          },
+          error: {
+            style: {
+              background: "#dc2626",
+              color: "#fff",
+            },
+          },
+        }}
       />
     </BrowserRouter>
   );

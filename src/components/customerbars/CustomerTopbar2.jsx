@@ -35,9 +35,11 @@ export default function CustomerTopbar2() {
     <div className="flex items-center justify-between px-5 py-5 bg-white border border-gray-100 ">
       {/* Left */}
       <div className="flex  items-center gap-1 cursor-pointer">
-        <h1 className="text-4xl font-md leading-2 text-gray-900">
-          {initials(customer.displayName || customer.customerName)}
-        </h1>
+        <div>
+          <h1 className="text-4xl font-md leading-2 text-gray-900">
+            {(customer.displayName || customer.customerName)}
+          </h1>
+        </div>
       </div>
 
       {/* Right */}

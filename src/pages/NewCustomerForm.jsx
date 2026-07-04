@@ -17,6 +17,7 @@ import {
   setAddressField,
   copyBillingToShipping,
   setCurrency,
+  setErrors,
 } from "../slices/customerSlice";
 
 
@@ -64,195 +65,196 @@ const AddressColumn = ({
   address,
   addressType,
   dispatch,
-  showCopyLink,
+  showCopyLink = false,
 }) => {
-  const handleAddrChange = (field) => (e) => {
-    dispatch(setAddressField({ addressType, field, value: e.target.value }));
-  };
-
   const errors = useSelector((state) => state.customer.errors);
 
-  const country = [
+  const safeAddress = address || emptyAddress;
 
+  const countries = [
     "India",
     "USA",
     "UK",
     "UAE",
-    "AUS",
-    "NEWZLAND",
-    "PAKISTAN",
-    "JAPAN",
-    "CHINA"
+    "Australia",
+    "New Zealand",
+    "Pakistan",
+    "Japan",
+    "China",
+  ];
 
-  ]
+  const handleAddrChange = (field) => (e) => {
+    dispatch(
+      setAddressField({
+        addressType,
+        field,
+        value: e.target.value,
+      })
+    );
+
+    dispatch(clearFieldError(field));
+  };
+
   return (
-    <div className="flex-1 min-w-[300px]">
-      <h3 className="text-[15px] font-medium text-gray-800 mb-5">
-        {title}
+    <div className="flex-1 min-w-[400px]">
+      <div className="flex justify-between items-center mb-5">
+        <h3 className="font-semibold text-lg">{title}</h3>
+
         {showCopyLink && (
-          <span className="ml-1 text-sm font-normal">
-            ( <ArrowDown className="inline w-3.5 h-3.5 text-blue-600 -mt-0.5" />{" "}
-            <button
-              onClick={() => dispatch(copyBillingToShipping())}
-              className="text-blue-600 hover:underline"
-            >
-              Copy billing address
-            </button>{" "}
-            )
-          </span>
+          <button
+            type="button"
+            onClick={() => dispatch(copyBillingToShipping())}
+            className="text-blue-600 hover:underline text-sm"
+          >
+            Copy billing address
+          </button>
         )}
-      </h3>
+      </div>
 
       <div className="space-y-4">
+
         {/* Attention */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Attention</Label>
+
           <input
             type="text"
-            value={address.attention}
+            value={safeAddress.attention}
             onChange={handleAddrChange("attention")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
 
-        {/* Country/Region */}
+        {/* Country */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Country/Region</Label>
+
           <div className="relative">
             <select
-              value={address.country}
-              onChange={(e) => {
-                dispatch(
-                  setField({
-                    field: "country",
-                    value: e.target.value,
-                  }),
-                );
-                dispatch(clearFieldError("country"));
-              }}
-              className={`w-full rounded px-3 py-2 border text-gray-500 ${errors.country
+              value={safeAddress.country}
+              onChange={handleAddrChange("country")}
+              className={`w-full rounded px-3 py-2 border ${errors.country
                 ? "border-red-500 bg-red-50"
                 : "border-gray-300"
                 }`}
             >
-              <option value="">Select country</option>
+              <option value="">Select Country</option>
 
-
-              {country.map((lang) => (
-                <option key={lang} value={lang}>
-                  {lang}
+              {countries.map((item) => (
+                <option key={item} value={item}>
+                  {item}
                 </option>
               ))}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+            <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
-        {/* Address (Street 1 + Street 2) */}
+        {/* Street 1 */}
         <div className="grid grid-cols-[110px_1fr] items-start">
           <Label>Address</Label>
+
           <div className="space-y-3">
             <textarea
-              placeholder="Street 1"
-              value={address.street1}
-              onChange={handleAddrChange("street1")}
               rows={2}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400 resize-y"
+              placeholder="address"
+              value={safeAddress.address}
+              onChange={handleAddrChange("address")}
+              className="w-full border rounded px-2 py-1.5"
             />
-            <textarea
-              placeholder="Street 2"
-              value={address.street2}
-              onChange={handleAddrChange("street2")}
-              rows={2}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400 resize-y"
-            />
+
+
           </div>
         </div>
 
         {/* City */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>City</Label>
+
           <input
-            type="text"
-            value={address.city}
+            value={safeAddress.city}
             onChange={handleAddrChange("city")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
 
         {/* State */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>State</Label>
+
           <div className="relative">
             <select
-              value={address.state}
+              value={safeAddress.state}
               onChange={handleAddrChange("state")}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-400 appearance-none bg-white outline-none focus:border-blue-400"
+              className="w-full border rounded px-2 py-1.5 appearance-none"
             >
-              <option value="">Select or type to add</option>
+              <option value="">Select State</option>
               <option value="Tamil Nadu">Tamil Nadu</option>
               <option value="Karnataka">Karnataka</option>
               <option value="Maharashtra">Maharashtra</option>
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+            <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
         {/* Pin Code */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Pin Code</Label>
+
           <input
-            type="text"
-            value={address.pinCode}
-            onChange={handleAddrChange("pinCode")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            value={safeAddress.zipCode}
+            onChange={handleAddrChange("zipCode")}
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
 
         {/* Phone */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Phone</Label>
-          <div className="flex border border-gray-300 rounded overflow-hidden focus-within:border-blue-400">
-            <div className="relative">
-              <select
-                value={address.phoneCode}
-                onChange={handleAddrChange("phoneCode")}
-                className="appearance-none bg-gray-50 border-r border-gray-300 pl-2 pr-5 py-1.5 text-sm outline-none"
-              >
-                <option value="+91">+91</option>
-                <option value="+1">+1</option>
-                <option value="+44">+44</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+
+          <div className="flex border rounded overflow-hidden">
+            <select
+              value={safeAddress.phoneCode}
+              onChange={handleAddrChange("phoneCode")}
+              className="border-r px-2"
+            >
+              <option value="+91">+91</option>
+              <option value="+1">+1</option>
+              <option value="+44">+44</option>
+            </select>
+
             <input
-              type="text"
-              value={address.phone}
+              value={safeAddress.phone}
               onChange={handleAddrChange("phone")}
-              className="flex-1 px-2 py-1.5 text-sm outline-none w-0"
+              className="flex-1 px-2 py-1.5 outline-none"
             />
           </div>
         </div>
 
-        {/* Fax Number */}
+        {/* Fax */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Fax Number</Label>
+
           <input
-            type="text"
-            value={address.faxNumber}
-            onChange={handleAddrChange("faxNumber")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            value={safeAddress.fax}
+            onChange={handleAddrChange("fax")}
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
+
       </div>
     </div>
   );
 };
 
+
 export default function NewCustomerForm() {
   const dispatch = useDispatch();
-  const customer = useSelector((state) => state.customer);
-  const currency = useSelector((state) => state.customer?.currency || "");
+  const customer = useSelector(state => state.customer.customerForm);
+  const activeTab = useSelector(state => state.customer.activeTab);
+  const currency = useSelector((state) => state.customer?.customerForm.currency || "");
   const customerLanguage = useSelector(
     (state) => state.customerLanguage?.customerLanguage || "",
   );
@@ -260,36 +262,38 @@ export default function NewCustomerForm() {
   const errors = useSelector((state) => state.customer.errors);
 
   const changeTab = (tab) => {
-    dispatch(validateCustomer());
+    const errors = {};
 
-    const validationErrors = {};
-
-    if (!customer.firstName.trim()) {
-      validationErrors.firstName = "Please enter First Name";
+    if (!customer.firstName?.trim()) {
+      errors.firstName = "First name is required";
     }
 
-    if (!customer.lastName.trim()) {
-      validationErrors.lastName = "Please enter Last Name";
+    if (!customer.lastName?.trim()) {
+      errors.lastName = "Last name is required";
     }
 
-    if (!customer.companyName.trim()) {
-      validationErrors.companyName = "Please enter Company Name";
+    if (!customer.companyName?.trim()) {
+      errors.companyName = "Company name is required";
     }
 
-    if (!customer.displayName.trim()) {
-      validationErrors.displayName = "Please enter Display Name";
+    if (!customer.displayName?.trim()) {
+      errors.displayName = "Display name is required";
     }
 
-    if (Object.keys(validationErrors).length > 0) {
-      toast.error(Object.values(validationErrors)[0], {
+    // ❌ use correct variable
+    if (Object.keys(errors).length > 0) {
+      toast.error(Object.values(errors)[0], {
         position: "top-right",
         autoClose: 3000,
         style: {
-          background: "#dc2626", // Red
+          background: "#dc2626",
           color: "#fff",
           fontWeight: "500",
         },
       });
+
+      // optional: store errors in redux
+      dispatch(setErrors(errors));
 
       return;
     }
@@ -298,15 +302,16 @@ export default function NewCustomerForm() {
   };
 
   const handleChange = (field) => (e) => {
-    dispatch(
-      setField({
-        field,
-        value: e.target.value,
-      }),
-    );
+    const value =
+      e.target.type === "checkbox"
+        ? e.target.checked
+        : e.target.value;
 
+    dispatch(setField({ field, value }));
     dispatch(clearFieldError(field));
   };
+
+
   const tabs = [
     "Other Details",
     "Address",
@@ -556,7 +561,7 @@ export default function NewCustomerForm() {
                   value={customer.companyName}
                   onChange={handleChange("companyName")}
                   className={`w-full rounded px-3 py-2 border outline-none
-        ${errors.companyName
+                 ${errors.companyName
                       ? "border-red-500 bg-red-50"
                       : "border-gray-300 focus:border-blue-500"
                     }`}
@@ -603,12 +608,12 @@ export default function NewCustomerForm() {
               <div className="max-w-md w-full">
                 <div className="relative">
                   <select
-                    value={customer.currency}
+                    value={currency}
                     onChange={(e) => {
                       dispatch(setCurrency(e.target.value));
                       dispatch(clearFieldError("currency"));
                     }}
-                    className={`w-full rounded px-3 py-2 border ${errors.currency
+                    className={`w-full rounded px-3 py-2 border border-gray-200 text-gray-500 ${errors.currency
                       ? "border-red-500 bg-red-50"
                       : "border-gray-300"
                       }`}
@@ -622,7 +627,6 @@ export default function NewCustomerForm() {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
                 {/* <p className="text-xs text-gray-400 mt-1">
                     Currency cannot be edited as multi-currency handling is
@@ -734,7 +738,6 @@ export default function NewCustomerForm() {
                   ))}
                 </select>
 
-                <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
               </div>
             </div>
           </div>
@@ -747,13 +750,13 @@ export default function NewCustomerForm() {
                   key={tab}
                   type="button"
                   onClick={() => changeTab(tab)}
-                  className={`pb-2.5 text-sm transition-colors relative ${customer.activeTab === tab
+                  className={`pb-2.5 text-sm transition-colors relative ${activeTab === tab
                     ? "text-blue-600 font-medium"
                     : "text-gray-500 hover:text-gray-700"
                     }`}
                 >
                   {tab}
-                  {customer.activeTab === tab && (
+                  {activeTab === tab && (
                     <span className="absolute left-0 right-0 -bottom-px h-0.5 bg-blue-600 rounded-t" />
                   )}
                 </button>
@@ -762,10 +765,10 @@ export default function NewCustomerForm() {
           </div>
 
           {/* Tab content */}
-          {customer.activeTab === "Other Details" && (
+          {activeTab === "Other Details" && (
             <div className="space-y-4 mt-6">
               {/* PAN */}
-              <div className="grid grid-cols-[160px_1fr] items-center">
+              <div className="grid grid-cols-[160px_1fr] items-center border-gray-100">
                 <Label>
                   PAN <InfoIcon />
                 </Label>
@@ -930,7 +933,7 @@ export default function NewCustomerForm() {
             </div>
           )}
 
-          {customer.activeTab === "Address" && (
+          {activeTab === "Address" && (
             <div className="mt-6">
               <div className="flex flex-wrap gap-10 lg:gap-20">
                 <AddressColumn
@@ -961,17 +964,17 @@ export default function NewCustomerForm() {
               </div>
             </div>
           )}
-          {customer.activeTab === "Contact Persons" && (
+          {activeTab === "Contact Persons" && (
             <div className="mt-6 text-gray-400 text-sm">
               Contact persons go here.
             </div>
           )}
-          {customer.activeTab === "Custom Fields" && (
+          {activeTab === "Custom Fields" && (
             <div className="mt-6 text-gray-400 text-sm">
               Custom fields go here.
             </div>
           )}
-          {customer.activeTab === "Remarks" && (
+          {activeTab === "Remarks" && (
             <div className="mt-6 text-gray-400 text-sm">Remarks go here.</div>
           )}
 

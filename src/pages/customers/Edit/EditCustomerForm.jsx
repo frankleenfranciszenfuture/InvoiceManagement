@@ -11,6 +11,7 @@ import {
   editCustomer,
   removeCustomer,
   loadCustomers,
+  saveCustomer,
   setField,
   validateCustomer,
   clearFieldError,
@@ -20,6 +21,8 @@ import {
   copyBillingToShipping,
   setCurrency,
   setSelectedCustomer,
+  updateSelectedCustomerField,
+  setSelectedCustomerAddressField
 } from "../../../slices/customerSlice";
 
 
@@ -72,155 +75,173 @@ const AddressColumn = ({
   showCopyLink,
 }) => {
   const handleAddrChange = (field) => (e) => {
-    dispatch(setAddressField({ addressType, field, value: e.target.value }));
+    dispatch(setSelectedCustomerAddressField({ addressType, field, value: e.target.value }));
   };
 
+  const errors = useSelector((state) => state.customer.errors);
+  const safeAddress = address || emptyAddress;
+
+  const countries = [
+    "India",
+    "USA",
+    "UK",
+    "UAE",
+    "Australia",
+    "New Zealand",
+    "Pakistan",
+    "Japan",
+    "China",
+  ];
 
   return (
-    <div className="flex-1 min-w-[300px]">
-      <h3 className="text-[15px] font-medium text-gray-800 mb-5">
-        {title}
+    <div className="flex-1 min-w-[400px]">
+      <div className="flex justify-between items-center mb-5">
+        <h3 className="font-semibold text-lg">{title}</h3>
+
         {showCopyLink && (
-          <span className="ml-1 text-sm font-normal">
-            ( <ArrowDown className="inline w-3.5 h-3.5 text-blue-600 -mt-0.5" />{" "}
-            <button
-              onClick={() => dispatch(copyBillingToShipping())}
-              className="text-blue-600 hover:underline"
-            >
-              Copy billing address
-            </button>{" "}
-            )
-          </span>
+          <button
+            type="button"
+            onClick={() => dispatch(copyBillingToShipping())}
+            className="text-blue-600 hover:underline text-sm"
+          >
+            Copy billing address
+          </button>
         )}
-      </h3>
+      </div>
 
       <div className="space-y-4">
+
         {/* Attention */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Attention</Label>
+
           <input
             type="text"
-            value={address?.attention || ""}
+            value={safeAddress.attention}
             onChange={handleAddrChange("attention")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
 
-        {/* Country/Region */}
+        {/* Country */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Country/Region</Label>
-          <div className="relative">
 
+          <div className="relative">
             <select
-              value={address.country}
+              value={safeAddress.country}
               onChange={handleAddrChange("country")}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-400 appearance-none bg-white outline-none focus:border-blue-400"
+              className={`w-full rounded px-3 py-2 border ${errors.country
+                ? "border-red-500 bg-red-50"
+                : "border-gray-300"
+                }`}
             >
               <option value="">Select Country</option>
-              <option value="India">India</option>
-              <option value="United States">United States</option>
-              <option value="United Kingdom">United Kingdom</option>
+
+              {countries.map((item) => (
+                <option key={item} value={item}>
+                  {item}
+                </option>
+              ))}
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+            <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
-        {/* Address (Street 1 + Street 2) */}
+        {/* Street 1 */}
         <div className="grid grid-cols-[110px_1fr] items-start">
           <Label>Address</Label>
+
           <div className="space-y-3">
             <textarea
-              placeholder="Street 1"
-              value={address?.street1 || ""}
-              onChange={handleAddrChange("street1")}
               rows={2}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400 resize-y"
+              placeholder="address"
+              value={safeAddress.address}
+              onChange={handleAddrChange("address")}
+              className="w-full border rounded px-2 py-1.5"
             />
-            <textarea
-              placeholder="Street 2"
-              value={address?.street2 || ""}
-              onChange={handleAddrChange("street2")}
-              rows={2}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400 placeholder-gray-400 resize-y"
-            />
+
+
           </div>
         </div>
 
         {/* City */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>City</Label>
+
           <input
-            type="text"
-            value={address?.city || ""}
+            value={safeAddress.city}
             onChange={handleAddrChange("city")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
 
         {/* State */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>State</Label>
+
           <div className="relative">
             <select
-              value={address?.state || ""}
+              value={safeAddress.state}
               onChange={handleAddrChange("state")}
-              className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-400 appearance-none bg-white outline-none focus:border-blue-400"
+              className="w-full border rounded px-2 py-1.5 appearance-none"
             >
-              <option value="">Select or type to add</option>
+              <option value="">Select State</option>
               <option value="Tamil Nadu">Tamil Nadu</option>
               <option value="Karnataka">Karnataka</option>
               <option value="Maharashtra">Maharashtra</option>
             </select>
-            <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+
+            <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
           </div>
         </div>
 
         {/* Pin Code */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Pin Code</Label>
+
           <input
-            type="text"
-            value={address?.pinCode || ""}
-            onChange={handleAddrChange("pinCode")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            value={safeAddress.zipCode}
+            onChange={handleAddrChange("zipCode")}
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
 
         {/* Phone */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Phone</Label>
-          <div className="flex border border-gray-300 rounded overflow-hidden focus-within:border-blue-400">
-            <div className="relative">
-              <select
-                value={address?.phoneCode || "+91"}
-                onChange={handleAddrChange("phoneCode")}
-                className="appearance-none bg-gray-50 border-r border-gray-300 pl-2 pr-5 py-1.5 text-sm outline-none"
-              >
-                <option value="+91">+91</option>
-                <option value="+1">+1</option>
-                <option value="+44">+44</option>
-              </select>
-              <ChevronDown className="w-3 h-3 text-gray-400 absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-            </div>
+
+          <div className="flex border rounded overflow-hidden">
+            <select
+              value={safeAddress.phoneCode}
+              onChange={handleAddrChange("phoneCode")}
+              className="border-r px-2"
+            >
+              <option value="+91">+91</option>
+              <option value="+1">+1</option>
+              <option value="+44">+44</option>
+            </select>
+
             <input
-              type="text"
-              value={address?.phone || ""}
+              value={safeAddress.phone}
               onChange={handleAddrChange("phone")}
-              className="flex-1 px-2 py-1.5 text-sm outline-none w-0"
+              className="flex-1 px-2 py-1.5 outline-none"
             />
           </div>
         </div>
 
-        {/* Fax Number */}
+        {/* Fax */}
         <div className="grid grid-cols-[110px_1fr] items-center">
           <Label>Fax Number</Label>
+
           <input
-            type="text"
-            value={address?.faxNumber || ""}
-            onChange={handleAddrChange("faxNumber")}
-            className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm outline-none focus:border-blue-400"
+            value={safeAddress.fax}
+            onChange={handleAddrChange("fax")}
+            className="w-full border rounded px-2 py-1.5"
           />
         </div>
+
       </div>
     </div>
   );
@@ -232,13 +253,12 @@ export default function EditCustomerForm() {
   const { id } = useParams();
 
 
-  const { selectedCustomer, errors } = useSelector(
+  const { selectedCustomer, errors, activeTab } = useSelector(
     (state) => state.customer
   );
 
 
-  const customer = useSelector((state) => state.customer);
-  const currency = useSelector((state) => state.customer?.currency || "");
+
   const customerLanguage = useSelector(
     (state) => state.customerLanguage?.customerLanguage || "",
   );
@@ -332,58 +352,59 @@ export default function EditCustomerForm() {
     }
   };
 
-  const handleSave = async () => {
+  // const handleSave = async () => {
+  //   dispatch(validateCustomer());
+
+  //   const hasErrors = Object.keys(store.getState().customer.errors).length > 0;
+
+  //   if (hasErrors) return;
+
+  //   try {
+  //     await dispatch(addCustomer(customer)).unwrap();
+
+  //     toast.success("Customer created successfully!");
+
+  //     await dispatch(
+  //       loadCustomers({
+  //         page: 0,
+  //         size: 5,
+  //         search: "",
+  //         sortBy: "displayName",
+  //         direction: "asc",
+  //       }),
+  //     );
+
+  //     dispatch(closeModal());
+  //   } catch (error) {
+  //     toast.error(error || "Failed to create customer");
+  //   }
+  // };
+
+  const handleSaveEdit = async () => {
+    console.log("1. handleSaveEdit called");
+
     dispatch(validateCustomer());
 
-    const hasErrors = Object.keys(store.getState().customer.errors).length > 0;
-
-    if (hasErrors) return;
-
-    try {
-      await dispatch(addCustomer(customer)).unwrap();
-
-      toast.success("Customer created successfully!");
-
-      await dispatch(
-        loadCustomers({
-          page: 0,
-          size: 5,
-          search: "",
-          sortBy: "displayName",
-          direction: "asc",
-        }),
-      );
-
-      dispatch(closeModal());
-    } catch (error) {
-      toast.error(error || "Failed to create customer");
-    }
-  };
-
-  const handleEdit = async () => {
-    dispatch(validateCustomer());
+    console.log("2. validation finished");
 
     const hasErrors =
       Object.keys(store.getState().customer.errors).length > 0;
 
+    console.log("3. hasErrors =", hasErrors);
+    console.log(store.getState().customer.errors);
+
     if (hasErrors) return;
+
+    console.log("4. Calling saveCustomer");
 
     try {
       await dispatch(saveCustomer()).unwrap();
 
+      console.log("5. saveCustomer success");
+
       toast.success("Customer updated successfully!");
-
-      await dispatch(loadCustomers({
-        page: 0,
-        size: 5,
-        search: "",
-        sortBy: "displayName",
-        direction: "asc",
-      }));
-
-      dispatch(closeModal());
-    } catch (error) {
-      toast.error(error);
+    } catch (err) {
+      console.log("6. saveCustomer failed", err);
     }
   };
 
@@ -444,7 +465,7 @@ export default function EditCustomerForm() {
                     type="radio"
                     name="customerType"
                     value="Business"
-                    checked={customer.customerType === "Business"}
+                    checked={selectedCustomer.customerType === "Business"}
                     onChange={handleChange("customerType")}
                     className="w-4 h-4 text-blue-600 accent-blue-600"
                   />
@@ -455,7 +476,7 @@ export default function EditCustomerForm() {
                     type="radio"
                     name="customerType"
                     value="Individual"
-                    checked={customer.customerType === "Individual"}
+                    checked={selectedCustomer.customerType === "Individual"}
                     onChange={handleChange("customerType")}
                     className="w-4 h-4 text-blue-600 accent-blue-600"
                   />
@@ -472,7 +493,7 @@ export default function EditCustomerForm() {
               <div className="flex gap-2 max-w-md">
                 <div className="relative w-32 flex-shrink-0">
                   <select
-                    value={customer.salutation}
+                    value={selectedCustomer.salutation}
                     onChange={handleChange("salutation")}
                     className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm text-gray-500 appearance-none bg-white outline-none focus:border-blue-400"
                   >
@@ -721,14 +742,14 @@ export default function EditCustomerForm() {
                   key={tab}
                   type="button"
                   onClick={() => changeTab(tab)}
-                  className={`pb-2.5 text-sm transition-colors relative ${customer.activeTab === tab
+                  className={`pb-2.5 text-sm transition-colors relative ${activeTab === tab
                     ? "text-blue-600 font-medium"
                     : "text-gray-500 hover:text-gray-700"
                     }`}
                 >
                   {tab}
 
-                  {customer.activeTab === tab && (
+                  {activeTab === tab && (
                     <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 rounded-full" />
                   )}
                 </button>
@@ -737,7 +758,7 @@ export default function EditCustomerForm() {
           </div>
 
           {/* Tab content */}
-          {customer.activeTab === "Other Details" && (
+          {activeTab === "Other Details" && (
             <div className="space-y-4 mt-6">
               {/* PAN */}
               <div className="grid grid-cols-[160px_1fr] items-center">
@@ -905,7 +926,7 @@ export default function EditCustomerForm() {
             </div>
           )}
 
-          {customer.activeTab === "Address" && (
+          {activeTab === "Address" && (
             <div className="mt-6">
               <div className="flex flex-wrap gap-10 lg:gap-20">
                 <AddressColumn
@@ -937,17 +958,17 @@ export default function EditCustomerForm() {
               </div>
             </div>
           )}
-          {customer.activeTab === "Contact Persons" && (
+          {activeTab === "Contact Persons" && (
             <div className="mt-6 text-gray-400 text-sm">
               Contact persons go here.
             </div>
           )}
-          {customer.activeTab === "Custom Fields" && (
+          {activeTab === "Custom Fields" && (
             <div className="mt-6 text-gray-400 text-sm">
               Custom fields go here.
             </div>
           )}
-          {customer.activeTab === "Remarks" && (
+          {activeTab === "Remarks" && (
             <div className="mt-6 text-gray-400 text-sm">Remarks go here.</div>
           )}
 
@@ -963,7 +984,7 @@ export default function EditCustomerForm() {
           {/* Action buttons */}
           <div className="flex-1 flex flex-col overflow-hidden relative h-full  gap-3 mt-8 pb-10">
             <BottomActionBar
-              onSave={handleSave}
+              onSave={handleSaveEdit}
               onCancel={handleCancel}
               onSubmit={handleSubmit}
             />

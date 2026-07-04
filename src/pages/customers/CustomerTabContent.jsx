@@ -6,7 +6,7 @@ import CustomerRecentUpdates from "./CustomerRecentUpdates";
 import CustomerTopQuotation from "./CustomerTopQuotation";
 import CustomerOverviewPayDueCard from "../../components/customerbars/CustomerOverviewPayDueCard";
 import CustomerOverviewSalesExpensesCard from "../../components/customerbars/CustomerOverviewSalesExpensesCard";
-
+import { toast } from "react-toastify";
 
 
 export default function CustomerTabContent() {

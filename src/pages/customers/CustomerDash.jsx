@@ -12,6 +12,7 @@ import CustomerOverviewCard from "../../components/customerbars/CustomerOverview
 import { getCustomerById } from "../../slices/customerSlice";
 import CustomerOverviewSalesExpensesCard from "../../components/customerbars/CustomerOverviewSalesExpensesCard";
 import CustomerTabContent from "./CustomerTabContent";
+import { toast } from "react-toastify";
 
 export default function CustomerDash() {
   const { id } = useParams();

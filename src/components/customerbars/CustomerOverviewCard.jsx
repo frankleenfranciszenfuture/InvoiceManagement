@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { assets } from "../../assets/assets";
 import { setField } from "../../slices/customerSlice";
 import toast from "react-hot-toast";
+
 import {
   Check,
   ChevronDown,
@@ -103,29 +104,17 @@ export default function CustomerOverviewCard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [dispatch]);
 
-  // const handleSaveCustomerType = async () => {
-  //   console.log("selectedCustomer:", selectedCustomer);
-  //   console.log("customerId:", selectedCustomer.customerId);
-  //   console.log("id:", selectedCustomer.id);
 
-  //   try {
-  //     await dispatch(saveCustomer()).unwrap();
-
-  //     dispatch(setIsEditingCustomerType(false));
-  //     dispatch(setOpenCustomerType(false));
-
-  //     toast.success("Customer updated successfully");
-  //   } catch (err) {
-  //     console.error(err);
-  //     toast.error("Failed to update customer");
-  //   }
-  // };
 
   const handleSave = async () => {
     try {
       console.log("Saving...");
 
       const updatedCustomer = await dispatch(saveCustomer()).unwrap();
+
+      console.log("Before success toast");
+      toast.success("Customer updated successfully");
+      console.log("After success toast");
 
       console.log("Saved:", updatedCustomer);
 
@@ -147,10 +136,11 @@ export default function CustomerOverviewCard() {
       dispatch(setEditingField(null));
       dispatch(setOpenCustomerType(false));
 
-      toast.success("Customer updated successfully");
+
+
     } catch (err) {
       console.error(err);
-      toast.error(err.message);
+      toast.error(err?.message || String(err) || "Something went wrong");
     }
   };
 
@@ -412,6 +402,7 @@ export default function CustomerOverviewCard() {
             <p className="text-sm text-gray-500">{customer.email}</p>
             <p className="text-sm text-gray-500">{customer.mobile}</p>
           </div>
+
         </div>
         <button className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 font-medium mr-3 mb-6">
           <Settings className="w-5 h-5 rounded-lg bg-blue-600 text-white p-0.5 cursor-pointer" />

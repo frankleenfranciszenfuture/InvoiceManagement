@@ -1,6 +1,7 @@
 import { Pencil, Check, X, ChevronDown } from "lucide-react";
 
 import { useDispatch, useSelector } from "react-redux";
+import toast from "react-hot-toast";
 
 import {
     setEditingField,
@@ -91,16 +92,25 @@ export default function EditableFieldCustomer({ item, customer }) {
     const editable = editableFields[item.label];
 
     const handleSave = async () => {
-        await dispatch(saveCustomer());
+        try {
+            await dispatch(saveCustomer()).unwrap();
 
-        dispatch(setEditingField(null));
+            toast.success("Customer updated successfully");
 
-        if (editable) dispatch(editable.setOpen(false));
+            dispatch(setEditingField(null));
+
+            if (editable) {
+                dispatch(editable.setOpen(false));
+            }
+        } catch (err) {
+            toast.error(err || "Failed to update customer");
+        }
     };
 
     return (
         <div className="flex items-center gap-6">
             <div className="w-48 font-medium cursor-pointer ">{item.label}</div>
+
 
             <div className="flex-1 flex items-center bg-gray-100 rounded-md cursor-pointer ">
                 <div className="flex-1 px-3 py-2 relative ">

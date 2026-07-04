@@ -11,6 +11,7 @@ import {
   Bell,
   Settings,
 } from "lucide-react";
+import toast from "react-hot-toast";
 
 const Login = () => {
   const [email, setEmail] = useState("");
@@ -49,15 +50,21 @@ const Login = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-    dispatch(
-      loginUser({
-        email: form.email,
-        password: form.password,
-      }),
-    );
+    try {
+      await dispatch(
+        loginUser({
+          email: form.email,
+          password: form.password,
+        })
+      ).unwrap();
+
+      toast.success("Login successful");
+    } catch (err) {
+      toast.error(err || "Login failed");
+    }
   };
 
   useEffect(() => {

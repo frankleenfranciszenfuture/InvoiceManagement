@@ -1,6 +1,6 @@
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   loadCustomers,
   setCurrentPage,
@@ -9,11 +9,15 @@ import {
 } from "../slices/customerSlice";
 
 import { openModal } from "../slices/uiSlice";
-import { Pencil, Trash2, User } from "lucide-react";
+import { ChevronDown, Edit, Pencil, Trash2, User } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function CustomerTable() {
   const dispatch = useDispatch();
+
+  const navigate = useNavigate();
+
+  ;
 
   const {
     customers,
@@ -25,15 +29,17 @@ export default function CustomerTable() {
     totalElements,
   } = useSelector((state) => state.customer);
 
-  useEffect(() => {
-    // Now this correctly uses the imported Thunk from your slice file!
-    dispatch(loadCustomers({ page, size: pageSize }));
-  }, [dispatch, page, pageSize]);
+  // useEffect(() => {
+  //   // Now this correctly uses the imported Thunk from your slice file!
+  //   dispatch(loadCustomers({ page, size: pageSize }));
+  // }, [dispatch, page, pageSize]);
 
 
   const currentCustomers = customers || [];
 
-  const navigate = useNavigate();
+
+  const [showEdit, setShowEdit] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
 
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this customer?")) return;
@@ -53,6 +59,15 @@ export default function CustomerTable() {
       .join("")
       .slice(0, 2)
       .toUpperCase() || "??";
+
+  //status color
+  const statusColor = {
+    DRAFT: "bg-gray-100 text-gray-700",
+    SENT: "bg-blue-100 text-blue-700",
+    PENDING: "bg-yellow-100 text-yellow-700",
+    ACTIVE: "bg-green-100 text-green-700",
+  };
+
 
   // get colors
   const avatarColors = [
@@ -95,18 +110,21 @@ export default function CustomerTable() {
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-      <div className="overflow-x-auto">
+    <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto overflow-y-visible">
+      <div className="overflow-x-auto overflow-y-visible">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
               {[
                 "Display Name",
                 "Customer Type",
+                "Currency",
                 "Email",
                 "Mobile",
-                "Work Phone",
                 "PAN",
+                "Receivables",
+                "UnUsedCredits",
+                "Status",
                 "Actions",
               ].map((h) => (
                 <th
@@ -127,7 +145,7 @@ export default function CustomerTable() {
                   key={c.id || index}
                   onClick={() => {
                     dispatch(setSelectedCustomer(c));
-                    navigate(`/customers/${c.id}`);
+                    navigate(`/customers/view/${c.id}`);
                   }}
                   className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                 >
@@ -151,8 +169,12 @@ export default function CustomerTable() {
                     </div>
                   </td>
 
+
                   {/* Type */}
                   <td className="px-4 py-3">{c.customerType || "—"}</td>
+
+                  {/* Currency */}
+                  <td className="px-4 py-3">{c.currency || "—"}</td>
 
                   {/* Email */}
                   <td className="px-4 py-3">{c.email || "—"}</td>
@@ -162,41 +184,64 @@ export default function CustomerTable() {
                     {c.mobileCode || "+91"} {c.mobile || "—"}
                   </td>
 
-                  {/* Work Phone */}
-                  <td className="px-4 py-3">
-                    {c.workPhoneCode || "+91"} {c.workPhone || "—"}
-                  </td>
-
                   {/* PAN */}
                   <td className="px-4 py-3">{c.pan || "—"}</td>
 
-                  {/* Actions */}
-                  <td className="px-4 py-3">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          dispatch(
-                            openModal({
-                              type: "editCustomer",
-                              data: c,
-                            }),
-                          );
-                        }}
-                        className="p-2 rounded-full bg-blue-100 text-blue-600 hover:bg-blue-300 transition-all"
-                      >
-                        <Pencil size={16} />
-                      </button>
+                  {/* Receivables */}
+                  <td className="px-4 py-3">{c.receivable || "—"}</td>
 
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDelete(c.id);
-                        }}
-                        className="p-2 rounded-full bg-red-100 text-red-600 hover:bg-red-300 transition-all"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                  {/* UnUsed credits */}
+                  <td className="px-4 py-3">{c.unusedCredits || "—"}</td>
+
+                  {/* Status */}
+                  <td className="px-5 py-3 font-semibold">
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[c.status]}`}
+                    >
+                      {c.status || "—"}
+                    </span>
+                  </td>
+
+
+                  {/* Actions */}
+                  <td className="relative overflow-visible px-4 py-3">
+                    <div className="flex justify-end">
+                      <div className="relative group inline-block">
+                        <button className="p-1 rounded-full bg-blue-500 text-white ">
+                          <ChevronDown size={16} />
+                        </button>
+
+                        <div
+                          className="
+                                absolute
+                                right-0
+                                top-full
+                                mt-1
+                                z-[9999]
+                                opacity-0
+                                invisible
+                                group-hover:opacity-100
+                                group-hover:visible
+                                transition-all
+                              "
+                        >
+                          <div className="w-32 rounded-md bg-blue-500 shadow-lg ">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation(); // Prevent row click
+                                setShowEdit(true);
+                                dispatch(setSelectedCustomer(c));
+                                navigate(`/customers/edit/${c.id}`);
+                              }}
+                              className="flex w-full items-center gap-2 px-4 py-2 text-white hover:bg-blue-600 rounded-md"
+                            >
+                              <Edit size={16} />
+                              Edit
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
                     </div>
                   </td>
                 </tr>
@@ -210,35 +255,36 @@ export default function CustomerTable() {
             )}
           </tbody>
         </table>
-      </div>
 
-      <div className="p-5 border-t border-gray-100 flex items-center justify-between">
-        <p className="text-sm text-gray-500">
-          Showing {currentCustomers.length} of {totalElements} customers
-        </p>
 
-        <div className="flex items-center gap-3">
-          <button
-            disabled={page === 0}
-            onClick={() => dispatch(setCurrentPage(page - 1))}
-            className="text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50"
-          >
-            Previous
-          </button>
+        <div className="p-5 border-t border-gray-100 flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            Showing {currentCustomers.length} of {totalElements} customers
+          </p>
 
-          <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white text-sm font-medium">
-            {page + 1}
-          </span>
+          <div className="flex items-center gap-3">
+            <button
+              disabled={page === 0}
+              onClick={() => dispatch(setCurrentPage(page - 1))}
+              className="text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            >
+              Previous
+            </button>
 
-          <button
-            disabled={page >= totalPages - 1}
-            onClick={() => dispatch(setCurrentPage(page + 1))}
-            className="text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50"
-          >
-            Next
-          </button>
+            <span className="w-8 h-8 flex items-center justify-center rounded-lg bg-indigo-600 text-white text-sm font-medium">
+              {page + 1}
+            </span>
+
+            <button
+              disabled={page >= totalPages - 1}
+              onClick={() => dispatch(setCurrentPage(page + 1))}
+              className="text-sm text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
         </div>
-      </div>
+      </div >
     </div>
   );
 }

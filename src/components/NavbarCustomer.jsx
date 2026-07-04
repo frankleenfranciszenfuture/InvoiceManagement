@@ -1,7 +1,18 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Menu, Plus, Bell } from "lucide-react";
+import { Menu, Plus, Bell, Edit } from "lucide-react";
 import { toggleSidebar, openModal } from "../slices/uiSlice";
+import {
+  setSearch,
+  setSelectedView,
+} from "../slices/customer/customerViewSlice";
+
+import {
+  loadCustomers,
+  setStatus,
+  setCurrentPage
+} from "../slices/customerSlice";
+
 import {
   History,
   Search,
@@ -14,9 +25,14 @@ import {
 export default function NavbarCustomer({ title }) {
   // console.log("Title:", title);
   const dispatch = useDispatch();
-  const open = useSelector((s) => s.ui.sidebarOpen);
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  const sidebarOpen = useSelector((s) => s.ui.sidebarOpen);
 
   const user = useSelector((state) => state.auth.user);
+
+  const dropdownOpenRef = useRef(null);
 
   const initials = (name) =>
     name
@@ -26,67 +42,124 @@ export default function NavbarCustomer({ title }) {
       .slice(0, 2)
       .toUpperCase() || "??";
 
+
+  const { selectedView, search, views } = useSelector(
+    (state) => state.customerView
+  );
+  const { status, page, pageSize } = useSelector((state) => state.customer);
+
+  const filteredViews = views.filter((view) =>
+    view.label.toLowerCase().includes(search.toLowerCase())
+  );
+
+  // useEffect(() => {
+  //   dispatch(
+  //     loadCustomers({
+  //       page,
+  //       size: pageSize,
+  //       search,
+  //       status,
+  //     })
+  //   );
+  // }, [dispatch, page, pageSize, search, status]);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (
+        dropdownOpenRef.current &&
+        !dropdownOpenRef.current.contains(e.target)
+      ) {
+        setDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  console.log("Search:", search);
+  console.log("Views:", views);
+  console.log("Filtered:", filteredViews);
+
   return (
-    // <header className="h-16 bg-white border-b border-gray-100 flex items-center px-4 gap-3 sticky top-0 z-10">
-    //   <button
-    //     onClick={() => dispatch(toggleSidebar())}
-    //     className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors lg:hidden"
-    //   >
-    //     <Menu size={18} />
-    //   </button>
 
-    //   <h1 className="font-semibold text-gray-100 text-base flex-1">{title}</h1>
+    <div className="h-[60px] border border-gray-100 rounded-md  flex items-center justify-between bg-white px-2 py-2 border-b ">
+      {/* Left */}
+      <div ref={dropdownOpenRef} className="relative">
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="flex items-center gap-1 rounded-md bg-gray-100 px-3 py-2 cursor-pointer"
+        >
+          <h2 className="font-semibold">{selectedView}</h2>
+          <ChevronDown
+            size={14}
+            className={`transition ${dropdownOpen ? "rotate-180" : ""
+              }`}
+          />
+        </button>
 
-    //   <button
-    //     onClick={() => dispatch(openModal({ type: "createInvoice" }))}
-    //     className="btn-primary"
-    //   >
-    //     <Plus size={16} />
-    //     {/* New Invoice */}
-    //   </button>
+        {dropdownOpen && (
+          <div className="absolute left-0 mt-2 w-72 rounded-md border border-gray-200 bg-white shadow-lg z-50 cursor-pointer">
 
-    //   <button className="p-2 rounded-lg text-gray-500 hover:bg-gray-100 transition-colors relative">
-    //     <Bell size={18} />
-    //     <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-    //   </button>
+            {/* Views */}
+            <div className="max-h-72 overflow-y-auto">
+              {filteredViews.map((view) => (
+                <button
+                  key={view.value}
+                  onClick={() => {
+                    dispatch(setCurrentPage(0));
+                    dispatch(setStatus(view.value));
+                    dispatch(setSelectedView(view.label));
 
-    //   <button className="text-gray-500 hover:text-gray-700">
-    //     <Settings className="w-[18px] h-[18px]" />
-    //   </button>
+                    dispatch(
+                      loadCustomers({
+                        page: 0,
+                        size: 10,
+                        search,
+                        status: view.value,
+                      })
+                    );
 
-    //   <button className="w-8 h-8 rounded-full bg-purple-700 flex items-center justify-center text-white text-sm font-medium">
-    //     {initials(user?.name)}
-    //   </button>
-    // </header>
+                    setDropdownOpen(false);
+                  }}
+                  className="w-full px-5 py-4 border-b border-gray-50 rounded-lg text-left hover:bg-blue-500 hover:text-white"
+                >
+                  {view.label}
 
-    // <div className="h-[60px] border border-gray-200 rounded-md flex items-center justify-between px-4 bg-white flex-shrink-0">
-    //   <div className="flex items-center gap-3 flex-1">
-    <div className="h-[60px] border border-gray-100 rounded-md  flex items-center justify-between bg-white px-2 py-2 border-b">
-      {/* Left Side */}
-      <button className="flex items-center gap-1 text-xl font-semibold text-gray-900">
-        All Customers
-        <ChevronDown size={18} className="text-blue-600" />
-      </button>
+                </button>
 
-      {/* Right Side */}
-      <div className="flex items-center gap-3">
-        <div className="flex overflow-hidden rounded-md shadow-sm">
-          <button className="flex items-center gap-2 bg-blue-600 px-4 py-2 text-white font-medium hover:bg-blue-700">
-            <Plus size={18} />
+              ))}
+
+            </div>
+
+            {/* Footer */}
+            <button className="w-full border-t border-gray-200 px-4 py-3 text-left text-blue-600 hover:bg-gray-50">
+              + New View
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Right */}
+      <div className="flex items-center gap-2">
+        <div className="flex overflow-hidden rounded-md border border-blue-600 shadow-sm">
+          <button className="flex items-center gap-1 bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">
+            <Plus size={12} />
             New
           </button>
 
-          <button className="bg-blue-600 px-3 text-white border-l border-blue-500 hover:bg-blue-700">
-            <ChevronDown size={16} />
+          <button className="border-l border-blue-500 bg-blue-600 px-2 text-white">
+            <ChevronDown size={12} />
           </button>
         </div>
 
-        <button className="w-10 h-10 flex items-center justify-center rounded-md border bg-white hover:bg-gray-50">
-          <MoreHorizontal size={18} />
+        <button className="rounded-md border border-gray-300 p-1">
+          <MoreHorizontal size={14} />
         </button>
       </div>
     </div>
-    //   </div>
-    // </div>
   );
 }

@@ -61,15 +61,19 @@ export const saveCustomer = createAsyncThunk(
     try {
       const { selectedCustomer } = getState().customer;
 
+      console.log("ID:", selectedCustomer.id);
+      console.log("PUT Body:", selectedCustomer);
+
       const response = await api.updateCustomer(
         selectedCustomer.id,
         selectedCustomer,
       );
 
-      console.log("Update Response:", response);
+      console.log("Response:", response.data);
 
       return response.data;
     } catch (err) {
+      console.log(err);
       return rejectWithValue(err.message);
     }
   },
@@ -105,14 +109,13 @@ export const removeCustomer = createAsyncThunk(
 const emptyAddress = {
   attention: "",
   country: "",
-  street1: "",
-  street2: "",
+  address: "",
   city: "",
   state: "",
-  pinCode: "",
+  zipCode: "",
   phoneCode: "+91",
   phone: "",
-  faxNumber: "",
+  fax: "",
 };
 
 const emptyContactPerson = {
@@ -130,37 +133,48 @@ const emptyContactPerson = {
 };
 
 const initialState = {
-  // Form Fields
-  customerType: "Business",
-  salutation: "",
-  firstName: "",
-  lastName: "",
-  companyName: "",
-  displayName: "",
-  currency: "",
-  email: "",
-  workPhoneCode: "+91",
-  workPhone: "",
-  mobileCode: "+91",
-  mobile: "",
-  customerLanguage: "",
-  pan: "",
-  paymentTerms: "Due on Receipt",
-  enablePortal: false,
-  websiteUrl: "",
-  department: "",
-  designation: "",
-  twitter: "",
-  skype: "",
-  facebook: "",
-  activeTab: "Other Details",
+  // Create Form
+  customerForm: {
+    customerType: "Business",
+    salutation: "",
+    firstName: "",
+    lastName: "",
+    companyName: "",
+    displayName: "",
+    currency: "",
+    email: "",
+    workPhoneCode: "+91",
+    workPhone: "",
+    mobileCode: "+91",
+    mobile: "",
+    customerLanguage: "",
+    pan: "",
+    paymentTerms: "Due on Receipt",
+    enablePortal: false,
+    websiteUrl: "",
+    department: "",
+    designation: "",
+    twitter: "",
+    skype: "",
+    facebook: "",
 
-  billingAddress: { ...emptyAddress },
-  shippingAddress: { ...emptyAddress },
+    billingAddress: { ...emptyAddress },
+    shippingAddress: { ...emptyAddress },
 
-  // Table Data
+    contactPersons: [],
+    status: "",
+  },
+
+  // Edit/View
+  selectedCustomer: null,
+
+  // UI
+  activeTab: "OtherDetails",
+  editingField: null,
+  errors: {},
+
+  // Table
   customers: [],
-
   page: 0,
   pageSize: 5,
   totalElements: 0,
@@ -169,36 +183,28 @@ const initialState = {
   searchQuery: "",
   sortBy: "displayName",
   direction: "asc",
+  status: "ALL",
 
-  totalYouPay: 0,
-  totalYouCollect: 0,
-
-  errors: {},
-
-  selectedCustomer: null,
-
-  activeTab: "Dashboard",
-
+  // Dropdowns
   customerTypes: ["Business", "Individual"],
-
   customerTypeSearch: "",
   openCustomerType: false,
-  openCustomerLanguage: false,
+
   customerLanguageSearch: "",
-  customerLanguage: "",
+  openCustomerLanguage: false,
 
   paymentTermsSearch: "",
   openPaymentTerms: false,
 
-  editingField: null,
+  // Totals
+  totalYouPay: 0,
+  totalYouCollect: 0,
 
-  contactForm: { ...emptyContactPerson },
-
-  contactPersons: [],
-
+  // Activity
   activities: [],
-
   recentActivities: [],
+
+  hasCustomers: false,
 
   loading: false,
   error: null,
@@ -209,22 +215,46 @@ const customerSlice = createSlice({
   initialState,
   // initialState: { list: [], loading: false, error: null },
   reducers: {
+    setStatus: (state, action) => {
+      state.status = action.payload;
+    },
+
     setField: (state, action) => {
       const { field, value } = action.payload;
-      state[field] = value;
+      state.customerForm[field] = value;
+    },
 
-      // Clear error when user types
-      if (state.errors[field]) {
-        delete state.errors[field];
+    setSearchQuery(state, action) {
+      state.searchQuery = action.payload;
+    },
+
+    setAddressField: (state, action) => {
+      const { addressType, field, value } = action.payload;
+
+      if (!state.customerForm[addressType]) {
+        state.customerForm[addressType] = { ...emptyAddress };
       }
+
+      state.customerForm[addressType][field] = value;
+    },
+
+    setSelectedCustomerAddressField(state, action) {
+      const { addressType, field, value } = action.payload;
+
+      if (!state.selectedCustomer) return;
+
+      state.selectedCustomer[addressType][field] = value;
+    },
+
+    copyBillingToShipping: (state) => {
+      state.customerForm.shippingAddress = {
+        ...state.customerForm.billingAddress,
+      };
     },
 
     setActiveTab(state, action) {
       state.activeTab = action.payload;
     },
-    // setIsEditingCustomerType: (state, action) => {
-    //   state.isEditingCustomerType = action.payload;
-    // },
 
     setEditingField: (state, action) => {
       state.editingField = action.payload;
@@ -241,30 +271,36 @@ const customerSlice = createSlice({
     },
 
     validateCustomer: (state) => {
+      const customer = state.customerForm;
       const errors = {};
 
-      if (!state.firstName.trim()) errors.firstName = "Please enter first name";
+      if (!customer.firstName?.trim())
+        errors.firstName = "Please enter first name";
 
-      if (!state.lastName.trim()) errors.lastName = "Please enter last name";
+      if (!customer.lastName?.trim())
+        errors.lastName = "Please enter last name";
 
-      if (!state.companyName.trim())
+      if (!customer.companyName?.trim())
         errors.companyName = "Please enter company name";
 
-      if (!state.displayName.trim())
+      if (!customer.displayName?.trim())
         errors.displayName = "Please enter display name";
 
-      if (!state.currency) errors.currency = "Please select currency";
+      if (!customer.currency) errors.currency = "Please select currency";
 
-      if (!state.email.trim()) errors.email = "Please enter email";
-
-      if (!/\S+@\S+\.\S+/.test(state.email))
+      if (!customer.email?.trim()) {
+        errors.email = "Please enter email";
+      } else if (!/\S+@\S+\.\S+/.test(customer.email)) {
         errors.email = "Please enter a valid email";
+      }
 
-      if (!state.workPhone.trim()) errors.workPhone = "Please enter work phone";
+      if (!customer.workPhone?.trim())
+        errors.workPhone = "Please enter work phone";
 
-      if (!state.mobile.trim()) errors.mobile = "Please enter mobile number";
+      if (!customer.mobile?.trim())
+        errors.mobile = "Please enter mobile number";
 
-      if (!state.customerLanguage)
+      if (!customer.customerLanguage)
         errors.customerLanguage = "Please select language";
 
       state.errors = errors;
@@ -274,9 +310,10 @@ const customerSlice = createSlice({
       delete state.errors[action.payload];
     },
 
-    setSearchQuery(state, action) {
-      state.searchQuery = action.payload;
+    setErrors: (state, action) => {
+      state.errors = action.payload;
     },
+
     toggleEnablePortal: (state) => {
       state.enablePortal = !state.enablePortal;
     },
@@ -285,16 +322,8 @@ const customerSlice = createSlice({
       state.page = action.payload;
     },
 
-    setAddressField: (state, action) => {
-      const { addressType, field, value } = action.payload;
-      if (!state.selectedCustomer[addressType]) {
-        state.selectedCustomer[addressType] = {};
-      }
-      state.selectedCustomer[addressType][field] = value;
-    },
-
     setCurrency: (state, action) => {
-      state.currency = action.payload;
+      state.customerForm.currency = action.payload;
     },
 
     setCustomerLanguageSearch: (state, action) => {
@@ -314,16 +343,17 @@ const customerSlice = createSlice({
       state.openCustomerType = action.payload;
     },
 
+    updateCustomerField: (state, action) => {
+      const { field, value } = action.payload;
+      state.customerForm[field] = value;
+    },
+
     updateSelectedCustomerField: (state, action) => {
       const { field, value } = action.payload;
 
       if (state.selectedCustomer) {
         state.selectedCustomer[field] = value;
       }
-    },
-
-    copyBillingToShipping: (state) => {
-      state.shippingAddress = { ...state.billingAddress };
     },
 
     setContactField: (state, action) => {
@@ -340,10 +370,20 @@ const customerSlice = createSlice({
     clearSelectedCustomer(state) {
       state.selectedCustomer = null;
     },
-
     setSelectedCustomer: (state, action) => {
-      console.log("Selected:", action.payload.id);
       state.selectedCustomer = action.payload;
+
+      state.customerForm = {
+        ...action.payload,
+        billingAddress: {
+          ...emptyAddress,
+          ...action.payload.billingAddress,
+        },
+        shippingAddress: {
+          ...emptyAddress,
+          ...action.payload.shippingAddress,
+        },
+      };
     },
 
     resetForm: () => ({
@@ -409,15 +449,16 @@ const customerSlice = createSlice({
       // ✅ ONLY ONE fulfilled
       .addCase(loadCustomers.fulfilled, (state, action) => {
         state.loading = false;
-        const data = action.payload || {}; // action.payload IS already the interior data block
 
-        // Use optional chaining or defaults for the assignments
+        const data = action.payload || {};
+
         state.customers = data.content || [];
-        // state.page = data.page || 0;
-        // state.pageSize = data.size || 10;
         state.totalElements = data.totalElements || 0;
         state.totalPages = data.totalPages || 0;
+
+        state.hasCustomers = (data.totalElements || 0) > 0;
       })
+
       // ✅ ONLY ONE rejected
       .addCase(loadCustomers.rejected, (state, action) => {
         state.loading = false;
@@ -472,17 +513,22 @@ const customerSlice = createSlice({
 });
 
 export const {
+  loading,
   setField,
   validateCustomer,
   clearFieldError,
 
   setActiveTab,
+  setErrors,
   setSearchQuery,
   toggleEnablePortal,
   setAddressField,
   copyBillingToShipping,
   resetForm,
   setCurrency,
+
+  updateSelectedCustomerField,
+  setSelectedCustomerAddressField,
 
   setCustomerLanguage,
   setOpenCustomerLanguage,
@@ -496,7 +542,6 @@ export const {
 
   setCustomerTypeSearch,
   setOpenCustomerType,
-  updateSelectedCustomerField,
 
   setIsEditingCustomerType,
   setEditCustomerType,
@@ -516,6 +561,8 @@ export const {
 
   setOpenPaymentTerms,
   setPaymentTermsSearch,
+
+  setStatus,
 } = customerSlice.actions;
 
 export default customerSlice.reducer;
