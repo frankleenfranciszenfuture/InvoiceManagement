@@ -33,6 +33,10 @@ import {
   setSalesPersonSearch,
 } from "../../slices/invoiceSlice";
 
+import { loadSalesPersons } from "../../slices/salesPersonSlice";
+
+import { loadItemMasters } from "../../slices/itemMasterSlice";
+
 import {
   Search,
   RotateCcw,
@@ -59,6 +63,7 @@ import {
 } from "lucide-react";
 import InvoiceAddPaymentCard from "./InvoiceAddPaymentCard";
 
+
 export default function NewInvoiceFull() {
   const dispatch = useDispatch();
 
@@ -81,9 +86,13 @@ export default function NewInvoiceFull() {
     (state) => state.invoice.customers || []
   );
 
+  const salesPersons = useSelector(
+    (state) => state.salesPerson.salesPersons ?? []
+  );
 
-  const salesPersons = useSelector((state) => state?.invoice?.salesPersons ?? []);
-  const itemMaster = useSelector((state) => state?.invoice?.itemMaster ?? []);
+  const itemMasters = useSelector(
+    (state) => state.itemMaster.itemMasters ?? []
+  );
 
   const total = useSelector(selectTotal);
 
@@ -106,12 +115,13 @@ export default function NewInvoiceFull() {
   );
 
   const salesPersonSearch = useSelector(
-    (state) => state.invoice?.salesPersonSearch || ""
+    (state) => state.invoice.salesPersonSearch ?? ""
   );
+
 
   const openCustomer = useSelector((state) => state.invoice?.openCustomer);
   const openSalesPerson = useSelector(
-    (state) => state.invoice?.openSalesPerson
+    (state) => state.invoice?.openSalesPerson ?? ""
   );
 
   const showSaveMenu = useSelector((state) => state.invoice?.showSaveMenu);
@@ -135,19 +145,19 @@ export default function NewInvoiceFull() {
       .includes((customerSearch || "").toLowerCase())
   );
 
+
   //sales
-  const filteredSalesPersons = (salesPersons ?? []).filter((s) =>
-    (s?.salesPersonName ?? "")
-      .toString()
+  const filteredSalesPersons = (salesPersons ?? []).filter((person) =>
+    (person.salesPersonName ?? "")
       .toLowerCase()
       .includes((salesPersonSearch ?? "").toLowerCase())
   );
+
   //items
-  const filteredItems = (itemMaster ?? []).filter((item) =>
-    (item?.itemName ?? "")
-      .toString()
+  const filteredItems = itemMasters.filter((item) =>
+    (item.itemName ?? "")
       .toLowerCase()
-      .includes((itemSearch ?? "").toLowerCase())
+      .includes(itemSearch.toLowerCase())
   );
 
   const handleTermsChange = (term) => {
@@ -168,6 +178,9 @@ export default function NewInvoiceFull() {
 
   useEffect(() => {
     dispatch(loadCustomers());
+    dispatch(loadSalesPersons());
+    dispatch(loadItemMasters());
+
   }, [dispatch]);
 
   useEffect(() => {
@@ -218,39 +231,20 @@ export default function NewInvoiceFull() {
     dispatch(setField({ field, value: e.target.value }));
   };
 
-  // const [payments, setPayments] = useState([
-  //   {
-  //     paymentMode: "Cash",
-  //     amount: 0,
-  //   },
-  // ]);
+  const makeBlankItem = () => ({
+    id: crypto.randomUUID(),
 
-  // const addSplitPayment = () => {
-  //   setPayments([
-  //     ...payments,
-  //     {
-  //       paymentMode: "Cash",
-  //       amount: 0,
-  //     },
-  //   ]);
-  // };
+    itemId: null,
+    description: "",
+    quantity: 1,
+    rate: 0,
+    amount: 0,
 
-  // const deletePaymentRow = (index) => {
-  //   setPayments(payments.filter((_, i) => i !== index));
-  // };
+    unit: "",
+    selected: false,
+  });
 
-  // const updatePayment = (index, field, value) => {
-  //   const updated = [...payments];
-  //   updated[index][field] = value;
-  //   setPayments(updated);
-  // };
 
-  // const totalReceived = payments.reduce(
-  //   (sum, p) => sum + Number(p.amount || 0),
-  //   0
-  // );
-
-  // const balance = total - totalReceived;
 
   return (
     <div className="flex h-full bg-gray-50 font-sans text-[13px] overflow-hidden">
@@ -545,18 +539,11 @@ export default function NewInvoiceFull() {
                           <button
                             key={salesPerson.id}
                             onClick={() => {
-                              dispatch(
-                                setSalesPersonName(
-                                  salesPerson.salesPersonName,
-                                ),
-                              );
-
-                              dispatch(
-                                setSalesPersonSearch(
-                                  salesPerson.salesPersonName,
-                                ),
-                              );
+                              dispatch(setSalesPersonName(salesPerson.salesPersonName));
+                              dispatch(setSalesPersonSearch(salesPerson.salesPersonName));
                               dispatch(setOpenSalesPerson(false));
+
+                              dispatch(setCustomerId(salesPerson.id));
                             }}
                             className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
                           >
@@ -718,57 +705,88 @@ export default function NewInvoiceFull() {
                             >
                               {" "}
                               <div className="max-h-64 overflow-y-auto p-1">
-                                {filteredItems.map((product) => (
-                                  <div
-                                    key={product.id}
-                                    onClick={() => {
-                                      dispatch(
-                                        updateItem({
-                                          id: item.id,
-                                          field: "description",
-                                          value: product.itemName,
-                                        }),
-                                      );
-
-                                      dispatch(
-                                        updateItem({
-                                          id: item.id,
-                                          field: "rate",
-                                          value: product.rate,
-                                        }),
-                                      );
-
-                                      dispatch(
-                                        updateItem({
-                                          id: item.id,
-                                          field: "selected",
-                                          value: true,
-                                        }),
-                                      );
-
-                                      dispatch(setOpenRowItemDropdown(false));
-                                      dispatch(setActiveItemId(null));
-
-                                      // Auto add next blank row
-                                      const isLastRow =
-                                        items[items.length - 1]?.id ===
-                                        item.id;
-
-                                      if (isLastRow) {
-                                        dispatch(addItem());
-                                      }
-                                    }}
-                                    className="cursor-pointer rounded-md px-3 py-3 hover:bg-blue-500 hover:text-white"
-                                  >
-                                    <div className=" cursor-pointer font-semibold uppercase">
-                                      {product.itemName}
-                                    </div>
-
-                                    <div className=" cursor-pointer text-sm opacity-80">
-                                      Rate: ₹{safeNumber(product.rate).toFixed(2)}
-                                    </div>
+                                {filteredItems.length === 0 ? (
+                                  <div className="p-3 text-gray-500">
+                                    No items found
                                   </div>
-                                ))}
+                                ) : (
+                                  filteredItems.map((itemMaster) => (
+                                    <div
+                                      key={itemMaster.id}
+                                      onClick={() => {
+                                        dispatch(
+                                          updateItem({
+                                            id: item.id,
+                                            field: "description",
+                                            value: itemMaster.itemName,
+                                          })
+                                        );
+
+                                        dispatch(
+                                          updateItem({
+                                            id: item.id,
+                                            field: "description",
+                                            value: itemMaster.description || itemMaster.itemName,
+                                          })
+                                        );
+
+                                        dispatch(
+                                          updateItem({
+                                            id: item.id,
+                                            field: "rate",
+                                            value: itemMaster.sellingPrice,
+                                          })
+                                        );
+
+                                        dispatch(
+                                          updateItem({
+                                            id: item.id,
+                                            field: "unit",
+                                            value: itemMaster.unit,
+                                          })
+                                        );
+
+                                        dispatch(
+                                          updateItem({
+                                            id: item.id,
+                                            field: "selected",
+                                            value: true,
+                                          })
+                                        );
+
+                                        dispatch(setItemSearch(""));
+                                        dispatch(setOpenRowItemDropdown(false));
+                                        dispatch(setActiveItemId(null));
+
+
+                                        if (items[items.length - 1]?.id === item.id) {
+                                          dispatch(addItem());
+                                        }
+                                      }}
+                                      className="cursor-pointer rounded-md px-3 py-3 transition-all
+                                      hover:bg-blue-600 hover:text-white"
+                                    >
+                                      <div className="font-semibold uppercase group-hover:text-gray-200">
+                                        {itemMaster.itemName}
+                                      </div>
+
+                                      <div className="text-sm text-gray-500 group-hover:text-blue-100">
+                                        ₹{itemMaster.sellingPrice}
+                                      </div>
+
+                                      <div className="text-xs text-gray-500 group-hover:text-blue-100">
+                                        {itemMaster.unit}
+                                      </div>
+
+                                      {itemMaster.description && (
+                                        <div className="text-xs opacity-70 mt-1 group-hover:text-blue-100">
+                                          {itemMaster.description}
+                                        </div>
+                                      )}
+
+                                    </div>
+                                  ))
+                                )}
                               </div>
                               <div className="border-t px-4 py-3">
                                 <button className=" cursor-pointer flex items-center gap-2 text-blue-600">

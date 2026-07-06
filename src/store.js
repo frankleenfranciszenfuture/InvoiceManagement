@@ -5,6 +5,8 @@ import customerReducer from "./slices/customerSlice";
 import uiReducer from "./slices/uiSlice";
 import authReducer from "./slices/authSlice";
 import customerViewReducer from "./slices/customer/customerViewSlice";
+import salesPersonReducer from "./slices/salesPersonSlice";
+import itemMasterReducer from "./slices/itemMasterSlice";
 
 export const store = configureStore({
   reducer: {
@@ -13,6 +15,8 @@ export const store = configureStore({
     invoice: invoiceReducer,
     customer: customerReducer,
     customerView: customerViewReducer,
+    salesPerson: salesPersonReducer,
+    itemMaster: itemMasterReducer,
     ui: uiReducer,
   },
 });

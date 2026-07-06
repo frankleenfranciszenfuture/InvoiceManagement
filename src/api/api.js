@@ -35,8 +35,9 @@ export const fetchDashboardStats = () => api.get("/dashboard/stats");
 
 // ── Customers ──────────────────────────────────────
 // Get Customers (Pagination + Search + Sorting)
-export const fetchCustomers = (params) => {
-  return api.get("/customers", { params }).then(extractData); // 🟢 Add .then(extractData) here!
+export const fetchCustomers = async (params) => {
+  const response = await api.get("/customers", { params });
+  return extractData(response); // 🟢 Add .then(extractData) here!
 };
 
 //GetById
@@ -81,8 +82,9 @@ export const checkCustomerEmail = (email) =>
 
 // ── Invoices ───────────────────────────────────────
 
-export const fetchInvoices = (params) => {
-  return api.get("/invoices", { params }).then(extractData); // 🟢 Add .then(extractData) here!
+export const fetchInvoices = async (params) => {
+  const response = await api.get("/invoices", { params });
+  return extractData(response); // 🟢 Add .then(extractData) here!
 };
 
 export const fetchInvoiceById = (id) => api.get(`/invoices/${id}`);
@@ -104,5 +106,64 @@ export const updateInvoice = (id, data) => api.put(`/invoices/${id}`, data);
 
 // Delete Invoice
 export const deleteInvoice = (id) => api.delete(`/invoices/${id}`);
+
+//Sales Persons
+
+// Get All
+export const fetchSalesPersons = async (params) => {
+  const response = await api.get("/sales-persons", { params });
+  return extractData(response);
+};
+
+// Get By Id
+export const fetchSalesPersonById = async (id) => {
+  const response = await api.get(`/sales-persons/${id}`);
+  return extractData(response);
+};
+
+// Create
+export const createSalesPerson = async (data) => {
+  const response = await api.post("/sales-persons", data);
+  return extractData(response);
+};
+
+// Update
+export const updateSalesPerson = async (id, data) => {
+  const response = await api.put(`/sales-persons/${id}`, data);
+  return extractData(response);
+};
+
+// Delete
+export const deleteSalesPerson = async (id) => {
+  const response = await api.delete(`/sales-persons/${id}`);
+  return extractData(response);
+};
+
+// itemMaster
+
+export const fetchItemMasters = async (params) => {
+  const response = await api.get("/item-master", { params });
+  return extractData(response);
+};
+
+export const fetchItemMasterById = async (id) => {
+  const response = await api.get(`/item-master/${id}`);
+  return extractData(response);
+};
+
+export const createItemMaster = async (data) => {
+  const response = await api.post("/item-master", data);
+  return extractData(response);
+};
+
+export const updateItemMaster = async (id, data) => {
+  const response = await api.put(`/item-master/${id}`, data);
+  return extractData(response);
+};
+
+export const deleteItemMaster = async (id) => {
+  const response = await api.delete(`/item-master/${id}`);
+  return extractData(response);
+};
 
 export default api;

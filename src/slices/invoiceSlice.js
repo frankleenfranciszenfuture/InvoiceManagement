@@ -7,6 +7,7 @@ import {
   fetchInvoiceItemById,
   fetchCustomers,
   deleteInvoice,
+  fetchSalesPersons,
 } from "../api/api";
 
 // ============================
@@ -170,7 +171,7 @@ const initialState = {
   subject: "",
 
   customerSearch: "",
-  salesPersons: [],
+  // salesPersons: [],
   salesPersonSearch: "",
   itemSearch: "",
   searchQuery: "",

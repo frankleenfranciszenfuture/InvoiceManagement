@@ -19,6 +19,7 @@ import CustomerDash from "./pages/customers/CustomerDash";
 import CreateCustomerModal from "./pages/customers/Createcustomermodal";
 import EditCustomerForm from "./pages/customers/Edit/EditCustomerForm";
 import { toast } from "react-toastify";
+import ItemCreate from "./pages/items/ItemCreate";
 
 function App() {
   return (
@@ -54,6 +55,7 @@ function App() {
           <Route path="/invoices" element={<InvoiceDashboard />} />
           <Route path="/customers/new" element={<NewCustomerForm />} />
           <Route path="/invoices/new" element={<NewInvoice />} />
+          <Route path="/items/new" element={<ItemCreate />} />
           <Route path="/view" element={<ViewInvoiceModal />} />
           <Route path="/create-customer" element={<CreateCustomerModal />} />
           <Route path="/invoice/:id" element={<InvoiceDash />} />
