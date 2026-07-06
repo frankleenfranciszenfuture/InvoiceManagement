@@ -1,10 +1,12 @@
 package com.inm.repository;
 
 import com.inm.entity.Customer;
+import com.inm.enums.CustomerStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,20 +18,42 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     boolean existsByEmailAndIsDeletedFalse(String email);
 
     @Query("""
-            SELECT c
-            FROM Customer c
-            WHERE c.isDeleted = false
-            AND (
-                    :search IS NULL
-                    OR :search = ''
-                    OR LOWER(c.displayName) LIKE LOWER(CONCAT('%', :search, '%'))
-                    OR LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%'))
-                    OR LOWER(c.mobile) LIKE LOWER(CONCAT('%', :search, '%'))
-                )
-            """)
+SELECT c
+FROM Customer c
+WHERE c.isDeleted = false
+AND (
+    :search IS NULL
+    OR :search = ''
+    OR LOWER(c.displayName) LIKE LOWER(CONCAT('%', :search, '%'))
+    OR LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%'))
+    OR LOWER(c.mobile) LIKE LOWER(CONCAT('%', :search, '%'))
+)
+""")
     Page<Customer> searchCustomers(
             String search,
-            Pageable pageable);
+            Pageable pageable
+    );
+
+
+    @Query("""
+SELECT c
+FROM Customer c
+WHERE c.isDeleted = false
+AND c.status = :status
+AND (
+    :search IS NULL
+    OR :search = ''
+    OR LOWER(c.displayName) LIKE LOWER(CONCAT('%', :search, '%'))
+    OR LOWER(c.email) LIKE LOWER(CONCAT('%', :search, '%'))
+    OR LOWER(c.mobile) LIKE LOWER(CONCAT('%', :search, '%'))
+)
+""")
+    Page<Customer> searchCustomersByStatus(
+            @Param("status") CustomerStatus status,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
 
     @Query("""
             SELECT c
@@ -44,4 +68,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
     long countByIsDeletedFalse();
 
     long countByCustomerTypeAndIsDeletedFalse(String customerType);
+
+
 }

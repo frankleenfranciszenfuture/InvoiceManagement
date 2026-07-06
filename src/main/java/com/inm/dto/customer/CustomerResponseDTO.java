@@ -2,6 +2,7 @@ package com.inm.dto.customer;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.inm.dto.address.AddressDTO;
+import com.inm.enums.CustomerStatus;
 import lombok.*;
 
 import java.time.LocalDateTime;
@@ -62,6 +63,8 @@ public class CustomerResponseDTO {
     private AddressDTO billingAddress;
 
     private AddressDTO shippingAddress;
+
+    private CustomerStatus status;
 
     @JsonFormat(pattern = "dd-MM-yyyy HH:mm:ss")
     private LocalDateTime createdAt;

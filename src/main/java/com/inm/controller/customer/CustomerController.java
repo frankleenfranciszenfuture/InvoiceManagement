@@ -6,7 +6,10 @@ import com.inm.dto.customer.CustomerDashboardDTO;
 import com.inm.dto.customer.CustomerDropdownDTO;
 import com.inm.dto.customer.CustomerRequestDTO;
 import com.inm.dto.customer.CustomerResponseDTO;
+import com.inm.dto.invoice.response.InvoiceResponse;
+import com.inm.enums.CustomerStatus;
 import com.inm.service.CustomerService;
+import com.inm.service.InvoiceService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,7 +25,7 @@ import java.util.List;
 public class CustomerController {
 
     private final CustomerService customerService;
-
+    private final InvoiceService invoiceService;
     /**
      * Create Customer
      */
@@ -43,16 +46,22 @@ public class CustomerController {
      */
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<CustomerResponseDTO>>> getCustomers(
-
             @RequestParam(defaultValue = "") String search,
 
-            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "ALL")
+            CustomerStatus status,
 
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "0")
+            int page,
 
-            @RequestParam(defaultValue = "displayName") String sortBy,
+            @RequestParam(defaultValue = "10")
+            int size,
 
-            @RequestParam(defaultValue = "asc") String direction) {
+            @RequestParam(defaultValue = "displayName")
+            String sortBy,
+
+            @RequestParam(defaultValue = "asc")
+            String direction) {
 
         PageResponse<CustomerResponseDTO> response =
                 customerService.getCustomers(
@@ -60,13 +69,43 @@ public class CustomerController {
                         page,
                         size,
                         sortBy,
-                        direction);
+                        direction,
+                        status
+                );
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Customers fetched successfully.",
                         response));
     }
+
+    @GetMapping("/{customerId}/invoices")
+    public ResponseEntity<ApiResponse<PageResponse<InvoiceResponse>>> getCustomerInvoices(
+            @PathVariable Long customerId,
+            @RequestParam(defaultValue = "") String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "invoiceDate") String sortBy,
+            @RequestParam(defaultValue = "desc") String direction) {
+
+        PageResponse<InvoiceResponse> response =
+                invoiceService.getCustomerInvoices(
+                        customerId,
+                        search,
+                        page,
+                        size,
+                        sortBy,
+                        direction
+                );
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Customer invoices fetched successfully.",
+                        response
+                )
+        );
+    }
+
 
     /**
      * Get Customer By Id

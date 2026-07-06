@@ -47,7 +47,7 @@ public class SecurityConfig {
                                 "/reset-password",
                                 "/logout"
                         ).permitAll()
-                        .requestMatchers("/customers/**").permitAll()
+//                        .requestMatchers("/customers/**").permitAll()
                         .anyRequest().authenticated()
                 )
 

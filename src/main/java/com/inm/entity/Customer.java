@@ -1,5 +1,7 @@
 package com.inm.entity;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.inm.enums.CustomerStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,6 +11,8 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "customers")
@@ -21,6 +25,7 @@ public class Customer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
 
     private String customerType;
 
@@ -68,6 +73,19 @@ public class Customer {
     private String skype;
 
     private String facebook;
+
+    @Enumerated(EnumType.STRING)
+    private CustomerStatus status;
+
+    @OneToMany(
+            mappedBy = "customer",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.LAZY
+    )
+    @JsonManagedReference
+    private List<Invoice> invoices = new ArrayList<>();
+
+
 
     // Billing Address
     @OneToOne(cascade = CascadeType.ALL, orphanRemoval = true)

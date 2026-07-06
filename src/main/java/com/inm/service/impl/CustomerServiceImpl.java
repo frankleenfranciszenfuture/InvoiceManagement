@@ -6,6 +6,7 @@ import com.inm.dto.customer.CustomerDropdownDTO;
 import com.inm.dto.customer.CustomerRequestDTO;
 import com.inm.dto.customer.CustomerResponseDTO;
 import com.inm.entity.Customer;
+import com.inm.enums.CustomerStatus;
 import com.inm.exception.DuplicateResourceException;
 import com.inm.exception.ResourceNotFoundException;
 import com.inm.mapper.CustomerMapper;
@@ -40,6 +41,7 @@ public class CustomerServiceImpl implements CustomerService {
         System.out.println("Language after Mapper = " + customer.getCustomerLanguage());
 
         customer.setIsDeleted(false);
+        customer.setStatus(request.getStatus());
 
         Customer savedCustomer = repository.save(customer);
 
@@ -65,6 +67,10 @@ public class CustomerServiceImpl implements CustomerService {
 
         mapper.updateEntity(request, customer);
 
+        if (request.getStatus() != null) {
+            customer.setStatus(request.getStatus());
+        }
+
         Customer updatedCustomer = repository.save(customer);
 
         return mapper.toDTO(updatedCustomer);
@@ -80,13 +86,16 @@ public class CustomerServiceImpl implements CustomerService {
         return mapper.toDTO(customer);
     }
 
+
     @Override
     public PageResponse<CustomerResponseDTO> getCustomers(
             String search,
             int page,
             int size,
             String sortBy,
-            String direction) {
+            String direction,
+            CustomerStatus status
+    ) {
 
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -94,16 +103,25 @@ public class CustomerServiceImpl implements CustomerService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Customer> customerPage =
-                repository.searchCustomers(search, pageable);
+        Page<Customer> customerPage;
 
-        List<CustomerResponseDTO> customers = customerPage
+        if (status == CustomerStatus.ALL) {
+            customerPage = repository.searchCustomers(search, pageable);
+        } else {
+            customerPage = repository.searchCustomersByStatus(
+                    status,
+                    search,
+                    pageable
+            );
+        }
+
+        List<CustomerResponseDTO> content = customerPage
                 .stream()
                 .map(mapper::toDTO)
                 .toList();
 
         return PageResponse.<CustomerResponseDTO>builder()
-                .content(customers)
+                .content(content)
                 .page(customerPage.getNumber())
                 .size(customerPage.getSize())
                 .totalElements(customerPage.getTotalElements())
@@ -112,6 +130,8 @@ public class CustomerServiceImpl implements CustomerService {
                 .last(customerPage.isLast())
                 .build();
     }
+
+
 
     @Override
     public void deleteCustomer(Long id) {

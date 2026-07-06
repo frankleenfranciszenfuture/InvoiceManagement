@@ -1,6 +1,7 @@
 package com.inm.dto.customer;
 
 import com.inm.dto.address.AddressDTO;
+import com.inm.enums.CustomerStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -73,4 +74,8 @@ public class CustomerRequestDTO {
 
     @Valid
     private AddressDTO shippingAddress;
+
+    private CustomerStatus status;
+
+
 }

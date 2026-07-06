@@ -1,5 +1,6 @@
 package com.inm.mapper;
 
+import com.inm.dto.customer.CustomerDTO;
 import com.inm.dto.customer.CustomerRequestDTO;
 import com.inm.dto.customer.CustomerResponseDTO;
 import com.inm.entity.Customer;
@@ -15,6 +16,7 @@ public interface CustomerMapper {
 
     Customer toEntity(CustomerRequestDTO dto);
 
+    @Mapping(target = "status", source = "status")
     CustomerResponseDTO toDTO(Customer entity);
 
     @Mapping(target = "id", ignore = true)
@@ -23,4 +25,6 @@ public interface CustomerMapper {
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(CustomerRequestDTO dto,
                       @MappingTarget Customer entity);
+
+
 }

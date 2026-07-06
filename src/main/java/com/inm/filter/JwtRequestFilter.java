@@ -35,7 +35,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
-                                    FilterChain filterChain) throws ServletException, IOException {
+                                    FilterChain filterChain)
+            throws ServletException, IOException {
 
         String path = request.getServletPath();
 
@@ -47,18 +48,15 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         String jwt = null;
         String email = null;
 
-        //1.check the authorization header
-        final String authorizationHeader = request.getHeader("Authorization");
+        String authorizationHeader = request.getHeader("Authorization");
+
         if (authorizationHeader != null && authorizationHeader.startsWith("Bearer ")) {
-
             jwt = authorizationHeader.substring(7);
-
         }
 
-        //2.If not found in header, check cookies
         if (jwt == null) {
-
             Cookie[] cookies = request.getCookies();
+
             if (cookies != null) {
                 for (Cookie cookie : cookies) {
                     if ("jwt".equals(cookie.getName())) {
@@ -67,24 +65,41 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                     }
                 }
             }
-            //3.validate the token and set security context
+            System.out.println("Path = " + request.getServletPath());
+            System.out.println("Authorization = " + request.getHeader("Authorization"));
+        }
 
-            if (jwt != null) {
+        if (jwt != null) {
+            email = jwtUtil.extractEmail(jwt);
+            try {
+                if (email != null &&
+                        SecurityContextHolder.getContext().getAuthentication() == null) {
 
-                email = jwtUtil.extractEmail(jwt);
-                if (email != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UserDetails userDetails = appUserDetailsService.loadUserByUsername(email);
+                    UserDetails userDetails =
+                            appUserDetailsService.loadUserByUsername(email);
+
                     if (jwtUtil.validateToken(jwt, userDetails)) {
-                        UsernamePasswordAuthenticationToken authenticationToken =
-                                new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
-                        authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-                        SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
+                        UsernamePasswordAuthenticationToken authentication =
+                                new UsernamePasswordAuthenticationToken(
+                                        userDetails,
+                                        null,
+                                        userDetails.getAuthorities());
+
+                        authentication.setDetails(
+                                new WebAuthenticationDetailsSource()
+                                        .buildDetails(request));
+
+                        SecurityContextHolder.getContext()
+                                .setAuthentication(authentication);
                     }
                 }
+
+            } catch (Exception e) {
+                // Ignore invalid token for public endpoints
+                e.printStackTrace();
             }
-
-
+            // ✅ Always continue the filter chain
             filterChain.doFilter(request, response);
         }
     }

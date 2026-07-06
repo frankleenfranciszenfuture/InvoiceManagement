@@ -5,6 +5,7 @@ import com.inm.dto.customer.CustomerDashboardDTO;
 import com.inm.dto.customer.CustomerDropdownDTO;
 import com.inm.dto.customer.CustomerRequestDTO;
 import com.inm.dto.customer.CustomerResponseDTO;
+import com.inm.enums.CustomerStatus;
 
 import java.util.List;
 
@@ -21,7 +22,8 @@ public interface CustomerService {
             int page,
             int size,
             String sortBy,
-            String direction);
+            String direction,
+            CustomerStatus status);
 
     void deleteCustomer(Long id);
 
