@@ -13,6 +13,13 @@ export default function BottomActionBarItems({ onSave, onCancel, onSubmit }) {
                     Save
                 </button>
 
+                <button
+                    onClick={onSubmit}
+                    className="px-4 py-2 bg-blue-700 text-white rounded-md hover:bg-blue-900"
+                >
+                    Save as Draft
+                </button>
+
 
                 <button
                     onClick={onCancel}

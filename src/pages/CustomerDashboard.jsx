@@ -1,8 +1,14 @@
 import React from "react";
 import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import BottomActionBar from "../../../invoice/src/components/BottomActionBar";
-import { loadCustomers, setCurrentPage } from "../slices/customerSlice";
+import {
+  loadCustomers,
+  setCurrentPage,
+  setStatus,
+} from "../slices/customerSlice";
+import { useSearchParams } from "react-router-dom";
 
 import {
   Search,
@@ -25,6 +31,10 @@ import NavbarCustomer from "../components/NavbarCustomer";
 
 export default function CustomerDashboard() {
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
+
+  const navigate = useNavigate();
+
   const {
     customers,
     loading,
@@ -35,11 +45,25 @@ export default function CustomerDashboard() {
     totalElements,
   } = useSelector((state) => state.customer);
 
+  const { search } = useSelector((state) => state.customerView);
+
   console.log("customers redux:", customers);
 
+  const status = searchParams.get("status") || "ALL";
+
+
   useEffect(() => {
-    dispatch(loadCustomers({ page, size: pageSize }));
-  }, [dispatch, page, pageSize]);
+    dispatch(setStatus(status));
+
+    dispatch(
+      loadCustomers({
+        page,
+        size: pageSize,
+        search,
+        status,
+      })
+    );
+  }, [dispatch, page, pageSize, search, status]);
 
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-[13px] overflow-hidden">
@@ -69,7 +93,7 @@ export default function CustomerDashboard() {
 
                 <div className="flex items-center gap-2.5 mt-1 flex-wrap justify-center">
                   <button
-                    // onClick={onCreateNew}
+                    onClick={() => navigate("/customers/new")}
                     className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />

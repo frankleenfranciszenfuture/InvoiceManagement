@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { Menu, Plus, Bell, Edit } from "lucide-react";
 import { toggleSidebar, openModal } from "../slices/uiSlice";
@@ -25,6 +26,8 @@ import {
 export default function NavbarCustomer({ title }) {
   // console.log("Title:", title);
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+
 
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -46,22 +49,13 @@ export default function NavbarCustomer({ title }) {
   const { selectedView, search, views } = useSelector(
     (state) => state.customerView
   );
+
   const { status, page, pageSize } = useSelector((state) => state.customer);
 
   const filteredViews = views.filter((view) =>
     view.label.toLowerCase().includes(search.toLowerCase())
   );
 
-  // useEffect(() => {
-  //   dispatch(
-  //     loadCustomers({
-  //       page,
-  //       size: pageSize,
-  //       search,
-  //       status,
-  //     })
-  //   );
-  // }, [dispatch, page, pageSize, search, status]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -111,17 +105,10 @@ export default function NavbarCustomer({ title }) {
                   key={view.value}
                   onClick={() => {
                     dispatch(setCurrentPage(0));
-                    dispatch(setStatus(view.value));
                     dispatch(setSelectedView(view.label));
+                    dispatch(setStatus(view.value));
 
-                    dispatch(
-                      loadCustomers({
-                        page: 0,
-                        size: 10,
-                        search,
-                        status: view.value,
-                      })
-                    );
+                    navigate(`/customers?status=${view.value}`);
 
                     setDropdownOpen(false);
                   }}

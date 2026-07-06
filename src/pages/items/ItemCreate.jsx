@@ -89,20 +89,42 @@ export default function ItemCreate() {
 
     const handleSave = async () => {
         try {
-
             const { id, imagePath, ...itemData } = item;
 
             await dispatch(
                 addItemMaster({
-                    item: itemData,
+                    item: {
+                        ...itemData,
+                        itemStatus: "ACTIVE",
+                    },
                     image: image?.file,
                 })
             ).unwrap();
 
             toast.success("Item created successfully!");
-
             dispatch(loadItemMasters());
+            dispatch(closeModal());
+        } catch (error) {
+            toast.error(error);
+        }
+    };
 
+    const handleSaveDraft = async () => {
+        try {
+            const { id, imagePath, ...itemData } = item;
+
+            await dispatch(
+                addItemMaster({
+                    item: {
+                        ...itemData,
+                        itemStatus: "DRAFT",
+                    },
+                    image: image?.file,
+                })
+            ).unwrap();
+
+            toast.success("Draft saved successfully!");
+            dispatch(loadItemMasters());
             dispatch(closeModal());
         } catch (error) {
             toast.error(error);
@@ -111,8 +133,8 @@ export default function ItemCreate() {
 
     const handleEdit = async () => {
         try {
-
             const { id, imagePath, ...itemData } = item;
+
             await dispatch(
                 updateItemMaster({
                     id,
@@ -122,16 +144,17 @@ export default function ItemCreate() {
             ).unwrap();
 
             toast.success("Item updated successfully!");
-
             dispatch(loadItemMasters());
-
             dispatch(closeModal());
         } catch (error) {
             toast.error(error);
         }
     };
 
+
     const handleUpdate = handleEdit;
+
+
 
 
     const handleDelete = async (id) => {
@@ -474,6 +497,7 @@ export default function ItemCreate() {
                 <div className="flex-1 flex flex-col overflow-hidden relative h-full  gap-3 mt-8 pb-10">
                     <BottomActionBarItems
                         onSave={item.id ? handleEdit : handleSave}
+                        onSubmit={handleSaveDraft}
                         onCancel={handleCancel}
 
                     />

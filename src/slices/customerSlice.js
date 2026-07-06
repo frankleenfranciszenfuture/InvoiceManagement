@@ -370,6 +370,7 @@ const customerSlice = createSlice({
     clearSelectedCustomer(state) {
       state.selectedCustomer = null;
     },
+
     setSelectedCustomer: (state, action) => {
       state.selectedCustomer = action.payload;
 

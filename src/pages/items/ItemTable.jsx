@@ -23,33 +23,36 @@ export default function ItemTable() {
     const [showMenu, setShowMenu] = useState(false);
 
 
-    const {
-        itemMaster,
-        loading,
-        error,
-    } = useSelector((state) => state.itemMaster);
+    const itemMasters = useSelector((state) => state.itemMaster.itemMasters);
+    const selectedItemMaster = useSelector((state) => state.itemMaster.selectedItemMaster);
+    const loading = useSelector((state) => state.itemMaster.loading);
+    const error = useSelector((state) => state.itemMaster.error);
 
 
-    if (!itemMaster || itemMaster.length === 0) {
-        return (
-            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
-                <User className="mx-auto mb-3 h-10 w-10 text-gray-300" />
-                <p className="text-gray-500">No customers yet. Add your first one!</p>
 
-                {/* Debug */}
-                {/* <pre>{JSON.stringify(customerState, null, 2)}</pre> */}
-            </div>
-        );
-    }
+    useEffect(() => {
+        dispatch(loadItemMasters());
+    }, [dispatch]);
 
     if (loading) return <p>Loading...</p>;
 
     if (error) return <p className="text-red-500">{error}</p>;
-    if (!itemMaster.length) {
+
+    if (!itemMasters || itemMasters.length === 0) {
         return (
-            <div className="p-10 text-center text-gray-500">No customers found.</div>
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 text-center">
+                <User className="mx-auto mb-3 h-10 w-10 text-gray-300" />
+                <p className="text-gray-500">No items yet. Add your first one!</p>
+            </div>
         );
     }
+
+    //status color
+    const statusColor = {
+        ACTIVE: "bg-green-100 text-green-700",
+        DRAFT: "bg-yellow-100 text-yellow-700",
+        INACTIVE: "bg-red-100 text-red-700",
+    };
 
     return (
         <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto overflow-y-visible">
@@ -65,6 +68,7 @@ export default function ItemTable() {
                                 "Selling Price",
                                 "Description",
                                 "Unit",
+                                "Status",
                                 "Actions",
                             ].map((h) => (
                                 <th
@@ -80,8 +84,8 @@ export default function ItemTable() {
 
 
                     <tbody>
-                        {itemMaster?.length > 0 ? (
-                            itemMaster.map((item, index) => (
+                        {itemMasters?.length > 0 ? (
+                            itemMasters.map((item, index) => (
                                 <tr
                                     key={item.id || index}
                                     onClick={() => {
@@ -91,7 +95,7 @@ export default function ItemTable() {
                                     className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
                                 >
                                     {/* Customer Info */}
-                                    <td className="px-2 py-3">
+                                    <td className="px-4 py-3">
                                         <div className="flex items-center gap-3">
                                             {/* <div
                                                 className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${getAvatarColor(
@@ -102,10 +106,10 @@ export default function ItemTable() {
                                             </div> */}
 
                                             <div>
-                                                <p className="font-medium text-gray-800">
+                                                <p className="font-small text-gray-800">
                                                     {item.itemName}
                                                 </p>
-                                                <p className="text-sm text-gray-500">ID: #{item.id}</p>
+                                                {/* <p className="text-sm text-gray-500">ID: #{item.id}</p> */}
                                             </div>
                                         </div>
                                     </td>
@@ -129,6 +133,15 @@ export default function ItemTable() {
                                     {/* description */}
                                     <td className="px-4 py-3">
                                         {item.description || "—"}
+                                    </td>
+
+                                    {/* Status */}
+                                    <td className="px-5 py-3 font-semibold">
+                                        <span
+                                            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[item.itemStatus]}`}
+                                        >
+                                            {item.itemStatus || "—"}
+                                        </span>
                                     </td>
 
 

@@ -29,18 +29,28 @@ const NAV = [
   {
     label: "Customers",
     icon: Users,
+    basePath: "/customers",
+    queryKey: "status",
     addTo: "/customers/new",
     children: [
-      { label: "All", to: "/customers/all" },
-      { label: "Active", to: "/customers/active" },
-      { label: "Inactive", to: "/customers/inactive" },
+      { label: "All", status: "ALL" },
+      { label: "Active", status: "ACTIVE" },
+      { label: "Inactive", status: "INACTIVE" },
+      { label: "Draft", status: "DRAFT" },
     ],
   },
   {
-    to: "/items",
-    icon: FolderKanban,
     label: "Items",
+    icon: FolderKanban,
+    basePath: "/items",
+    queryKey: "itemStatus",
     addTo: "/items/new",
+    children: [
+      { label: "All", status: "ALL" },
+      { label: "Active", status: "ACTIVE" },
+      { label: "Inactive", status: "INACTIVE" },
+      { label: "Draft", status: "DRAFT" },
+    ],
   },
   {
     to: "/quotes",
@@ -185,23 +195,29 @@ export default function Sidebar() {
                 </div>
 
                 {/* CHILDREN */}
+                {/* CHILDREN */}
                 {item.children && openMenu === item.label && (
                   <div className="ml-7 mt-1 flex flex-col space-y-1">
-                    {item.children.map((child) => (
-                      <NavLink
-                        key={child.to}
-                        to={child.to}
-                        className={({ isActive }) =>
-                          `text-sm px-2 py-1 rounded-md transition
-                           ${isActive
+                    {item.children.map((child) => {
+                      const search = new URLSearchParams(location.search);
+
+                      const active =
+                        location.pathname === item.basePath &&
+                        search.get(item.queryKey) === child.status;
+
+                      return (
+                        <NavLink
+                          key={`${item.label}-${child.status}`}
+                          to={`${item.basePath}?${item.queryKey}=${child.status}`}
+                          className={`text-sm px-2 py-1 rounded-md transition ${active
                             ? "text-blue-400 font-medium"
                             : "text-gray-400 hover:text-white"
-                          }`
-                        }
-                      >
-                        {child.label}
-                      </NavLink>
-                    ))}
+                            }`}
+                        >
+                          {child.label}
+                        </NavLink>
+                      );
+                    })}
                   </div>
                 )}
               </div>

@@ -1,64 +1,76 @@
 import React from 'react'
 import { useSelector, useDispatch } from "react-redux";
 import { useEffect } from 'react';
-import { itemMaster } from '../../slices/invSlice'
+import { useSearchParams } from "react-router-dom";
 import ItemTable from './ItemTable'
 import { Download, Plus, UserCircle } from 'lucide-react'
 
+import {
+    loadItemMasters,
+    setSelectedItemMaster,
+    loadItemMasterById,
 
-import { loadItemMasters } from '../../slices/itemMasterSlice';
+} from "../../slices/itemMasterSlice";
+
+import { setItemStatus } from '../../slices/items/ItemViewSlice';
+
+import NavbarItems from './NavbarItems';
 
 export default function ItemsDashboard() {
 
     const dispatch = useDispatch();
-    const {
-        itemMaster,
-        loading,
-        error,
-    } = useSelector((state) => state.itemMaster);
+    const [searchParams] = useSearchParams();
 
+
+
+    const itemMasters = useSelector((state) => state.itemMaster.itemMasters);
+    const selectedItemMaster = useSelector((state) => state.itemMaster.selectedItemMaster);
+    const loading = useSelector((state) => state.itemMaster.loading);
+    const error = useSelector((state) => state.itemMaster.error);
+
+
+    const itemStatus = searchParams.get("itemStatus") || "ALL";
 
     useEffect(() => {
-        dispatch(loadItemMasters());
-    }, [dispatch]);
-
+        dispatch(
+            loadItemMasters({
+                itemStatus,
+            })
+        );
+    }, [itemStatus, dispatch]);
 
     return (
         <div className="flex h-screen bg-gray-50 font-sans text-[13px] overflow-hidden">
             {/* Form Container Wrapper allowing separate inner scrolling */}
             <div className="flex-1 min-h-0 bg-white overflow-y-auto">
                 <div className="px-2 py-5 max-w-30xl w-full ">
-                    {/* <NavbarItemMaster /> */}
+                    <NavbarItems />
                     <>
-                        {itemMaster?.length > 0 ? (
+                        {itemMasters?.length > 0 ? (
                             <ItemTable />
                         ) : (
-                            <div className="min-h-full flex flex-col items-center justify-center gap-3 px-4">
-                                <div className="relative w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-1 flex-shrink-0 mt-30">
-                                    <UserCircle className="w-14 h-14 text-gray-400" />
-                                    <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                                        <Plus className="w-4 h-4" />
-                                    </div>
-                                </div>
+                            <div className="flex flex-col items-center justify-center py-16">
+                                <h2 className="text-lg font-semibold text-gray-800">
+                                    No records found
+                                </h2>
 
-                                <p className="text-base font-medium text-gray-800 text-center">
-                                    Every sale starts with a customer
-                                </p>
-                                <p className="text-sm text-gray-500 text-center max-w-sm">
-                                    Create and manage your customers and their contact persons,
-                                    all in one place.
+                                <p className="mt-2 text-sm text-gray-500 text-center max-w-md">
+                                    There are no items to display. Create a new item or import an existing file to get started.
                                 </p>
 
-                                <div className="flex items-center gap-2.5 mt-1 flex-wrap justify-center">
+                                <div className="flex items-center gap-3 mt-6">
                                     <button
-                                        // onClick={onCreateNew}
-                                        className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
+                                        onClick={() => navigate("/items/new")}
+                                        className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
                                     >
-                                        <Plus className="w-4 h-4" />
-                                        Create New Items
+                                        <Plus size={16} />
+                                        Create New Item
                                     </button>
-                                    <button className="flex items-center gap-2 bg-white text-gray-700 text-sm border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors whitespace-nowrap">
-                                        <Download className="w-4 h-4" />
+
+                                    <button
+                                        className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition"
+                                    >
+                                        <Download size={16} />
                                         Import File
                                     </button>
                                 </div>

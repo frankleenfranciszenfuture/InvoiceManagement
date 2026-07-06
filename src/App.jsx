@@ -21,6 +21,7 @@ import EditCustomerForm from "./pages/customers/Edit/EditCustomerForm";
 import { toast } from "react-toastify";
 import ItemCreate from "./pages/items/ItemCreate";
 import ItemsDashboard from "./pages/items/ItemsDashboard";
+import ItemTable from "./pages/items/ItemTable";
 
 function App() {
   return (
@@ -50,30 +51,29 @@ function App() {
             </ProtectedRoute>
           }
         >
+          {/* Dashboard */}
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/customers/:status" element={<CustomerDashboard />} />
-          <Route path="/customers" element={<Navigate to="/customers/all" replace />} />
-          <Route path="/invoices" element={<InvoiceDashboard />} />
-          <Route path="/items" element={<ItemsDashboard />} />
+
+          {/* Customers */}
+          <Route path="/customers" element={<CustomerDashboard />} />
           <Route path="/customers/new" element={<NewCustomerForm />} />
-          <Route path="/invoices/new" element={<NewInvoice />} />
-          <Route path="/items/new" element={<ItemCreate />} />
-          <Route path="/view" element={<ViewInvoiceModal />} />
-          <Route path="/create-customer" element={<CreateCustomerModal />} />
-          <Route path="/invoices/:id" element={<InvoiceDash />} />
-
-          {/* customers ListView */}
-
           <Route path="/customers/view/:id" element={<CustomerDash />} />
           <Route path="/customers/edit/:id" element={<EditCustomerForm />} />
 
+          {/* Items */}
+          <Route path="/items" element={<ItemsDashboard />} />
+          <Route path="/items/new" element={<ItemCreate />} />
 
-          {/* item ListView */}
+          {/* Invoices */}
+          <Route path="/invoices" element={<InvoiceDashboard />} />
+          <Route path="/invoices/new" element={<NewInvoice />} />
+          <Route path="/invoices/:id" element={<InvoiceDash />} />
 
-          <Route path="/items/view/:id" element={<CustomerDash />} />
-          <Route path="/items/edit/:id" element={<CustomerDash />} />
-
+          {/* Others */}
+          <Route path="/view" element={<ViewInvoiceModal />} />
+          <Route path="/create-customer" element={<CreateCustomerModal />} />
         </Route>
+
 
         {/* 404 */}
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
@@ -81,7 +81,7 @@ function App() {
 
       {/* Toast Container */}
       <Toaster
-        position="top-right"
+        position="top-center"
         toastOptions={{
           duration: 3000,
           success: {
