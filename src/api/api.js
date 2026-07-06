@@ -151,13 +151,49 @@ export const fetchItemMasterById = async (id) => {
   return extractData(response);
 };
 
-export const createItemMaster = async (data) => {
-  const response = await api.post("/item-master", data);
+export const createItemMaster = async (item, image) => {
+  const formData = new FormData();
+
+  formData.append(
+    "item",
+    new Blob([JSON.stringify(item)], {
+      type: "application/json",
+    }),
+  );
+
+  if (image) {
+    formData.append("image", image);
+  }
+
+  const response = await api.post("/item-master", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
   return extractData(response);
 };
 
-export const updateItemMaster = async (id, data) => {
-  const response = await api.put(`/item-master/${id}`, data);
+export const updateItemMaster = async (id, item, image) => {
+  const formData = new FormData();
+
+  formData.append(
+    "item",
+    new Blob([JSON.stringify(item)], {
+      type: "application/json",
+    }),
+  );
+
+  if (image) {
+    formData.append("image", image);
+  }
+
+  const response = await api.put(`/item-master/${id}`, formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+
   return extractData(response);
 };
 
