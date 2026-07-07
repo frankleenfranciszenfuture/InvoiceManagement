@@ -1,5 +1,7 @@
 package com.inm.dto.invoice.response;
 
+import com.inm.dto.customer.CustomerResponseDTO;
+import com.inm.dto.salesPerson.SalesPersonResponse;
 import com.inm.enums.InvoiceStatus;
 import lombok.Data;
 
@@ -14,27 +16,56 @@ public class InvoiceResponse {
 
     private String invoiceNumber;
 
-    private Long customerId;
-    private String customerName;
-    private String customerEmail;
-
-    private Long salesPersonId;
-    private String salesPersonName;
-
     private LocalDate invoiceDate;
+
     private LocalDate dueDate;
 
-    private String terms;
     private String subject;
+
     private String customerNotes;
+
+    private String terms;
+
     private String orderNumber;
 
-    private BigDecimal subTotal;
-    private BigDecimal taxAmount;
-    private BigDecimal totalAmount;
+    private String referenceNumber;
+
+    private String currency;
+
+    private BigDecimal exchangeRate;
+
+    private CustomerResponseDTO customer;
+
+    private SalesPersonResponse salesPerson;
 
     private List<InvoiceItemResponse> items;
 
+    private BigDecimal subTotal;
+
+    private BigDecimal discountAmount;
+
+    private BigDecimal taxAmount;
+
+    private BigDecimal shippingCharges;
+
+    private BigDecimal adjustment;
+
+    private BigDecimal totalAmount;
+
     private InvoiceStatus invoiceStatus;
+
+    private Boolean emailSent;
+
+    private LocalDate emailSentDate;
+
+    private LocalDate paidDate;
+
+    private BigDecimal paidAmount;
+
+    private Boolean pdfGenerated;
+
+    private LocalDate createdDate;
+
+    private LocalDate updatedDate;
 
 }

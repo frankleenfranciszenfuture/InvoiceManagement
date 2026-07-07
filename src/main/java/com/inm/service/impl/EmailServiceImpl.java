@@ -6,6 +6,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
+
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.mail.javamail.MimeMessageHelper;
 
 @Service
 @RequiredArgsConstructor
@@ -54,5 +59,35 @@ public class EmailServiceImpl implements EmailService {
         mailSender.send(message);
     }
 
+    @Override
+    public void sendInvoice(String to, String subject, byte[] pdf) {
 
+        try {
+
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(mimeMessage, true);
+
+            helper.setFrom(fromEmail);
+            helper.setTo(to);
+            helper.setSubject(subject);
+
+            helper.setText(
+                    "Dear Customer,\n\n" +
+                            "Please find your invoice attached.\n\n" +
+                            "Thank you."
+            );
+
+            helper.addAttachment(
+                    "Invoice.pdf",
+                    new ByteArrayResource(pdf)
+            );
+
+            mailSender.send(mimeMessage);
+
+        } catch (MessagingException e) {
+            throw new RuntimeException("Failed to send invoice email", e);
+        }
+    }
 }

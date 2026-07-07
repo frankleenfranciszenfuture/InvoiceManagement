@@ -7,5 +7,6 @@ public enum InvoiceStatus {
     SENT,
     PAID,
     OVERDUE,
-    ALL
+    ALL,
+    CANCELLED,
 }

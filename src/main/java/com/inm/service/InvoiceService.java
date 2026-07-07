@@ -40,4 +40,30 @@ public interface InvoiceService {
     List<InvoiceItemResponse> getAllItems(Long invoiceId);
 
     void delete(Long id);
+
+    // ==========================
+    // Invoice Actions
+    // ==========================
+
+    InvoiceResponse duplicateInvoice(Long id);
+
+    InvoiceResponse saveDraft(Long id);
+
+    InvoiceResponse cancelInvoice(Long id);
+
+    InvoiceResponse activateInvoice(Long id);
+
+    InvoiceResponse markOverdue(Long id);
+
+    InvoiceResponse updateStatus(Long id, InvoiceStatus status);
+
+    InvoiceResponse sendInvoice(Long id);
+
+    InvoiceResponse markInvoiceAsPaid(Long id);
+
+    void emailInvoice(Long id);
+
+    byte[] downloadInvoicePdf(Long id);
+
+
 }

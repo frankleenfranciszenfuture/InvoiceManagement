@@ -6,9 +6,7 @@ import com.inm.dto.invoice.request.InvoiceRequest;
 import com.inm.dto.invoice.response.InvoiceItemResponse;
 import com.inm.dto.invoice.response.InvoiceResponse;
 import com.inm.entity.*;
-import com.inm.enums.CustomerStatus;
 import com.inm.enums.InvoiceStatus;
-import com.inm.enums.ItemStatus;
 import com.inm.exception.ResourceNotFoundException;
 import com.inm.mapper.InvoiceItemMapper;
 import com.inm.mapper.InvoiceMapper;
@@ -16,7 +14,9 @@ import com.inm.repository.CustomerRepository;
 import com.inm.repository.InvoiceRepository;
 import com.inm.repository.ItemMasterRepository;
 import com.inm.repository.SalesPersonRepository;
+import com.inm.service.EmailService;
 import com.inm.service.InvoiceService;
+import com.inm.service.PdfService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -48,6 +48,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceItemMapper invoiceItemMapper;
 
+
+    // Optional Services
+    private final EmailService emailService;
+    private final PdfService pdfService;
 
     @Override
     public InvoiceResponse create(InvoiceRequest request) {
@@ -259,6 +263,209 @@ public class InvoiceServiceImpl implements InvoiceService {
                         new ResourceNotFoundException("Invoice not found"));
 
         invoiceRepository.delete(invoice);
+    }
+
+    // =====================================
+    // Duplicate Invoice
+    // =====================================
+
+    @Override
+    public InvoiceResponse duplicateInvoice(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        Invoice duplicate = new Invoice();
+
+        duplicate.setInvoiceNumber(generateInvoiceNumber());
+
+        duplicate.setInvoiceDate(LocalDate.now());
+        duplicate.setDueDate(invoice.getDueDate());
+
+        duplicate.setTerms(invoice.getTerms());
+        duplicate.setSubject(invoice.getSubject());
+        duplicate.setCustomerNotes(invoice.getCustomerNotes());
+        duplicate.setOrderNumber(invoice.getOrderNumber());
+
+        duplicate.setCustomer(invoice.getCustomer());
+        duplicate.setSalesPerson(invoice.getSalesPerson());
+
+        duplicate.setSubTotal(invoice.getSubTotal());
+        duplicate.setTaxAmount(invoice.getTaxAmount());
+        duplicate.setTotalAmount(invoice.getTotalAmount());
+
+        duplicate.setInvoiceStatus(InvoiceStatus.DRAFT);
+
+        List<InvoiceItem> items = new ArrayList<>();
+
+        for (InvoiceItem oldItem : invoice.getItems()) {
+
+            InvoiceItem newItem = new InvoiceItem();
+
+            newItem.setInvoice(duplicate);
+            newItem.setItem(oldItem.getItem());
+            newItem.setDescription(oldItem.getDescription());
+            newItem.setQuantity(oldItem.getQuantity());
+            newItem.setRate(oldItem.getRate());
+            newItem.setDiscount(oldItem.getDiscount());
+            newItem.setTaxPercent(oldItem.getTaxPercent());
+            newItem.setAmount(oldItem.getAmount());
+
+            items.add(newItem);
+        }
+
+        duplicate.setItems(items);
+
+        Invoice saved = invoiceRepository.save(duplicate);
+
+        return invoiceMapper.toResponse(saved);
+    }
+
+
+    @Override
+    public InvoiceResponse saveDraft(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        invoice.setInvoiceStatus(InvoiceStatus.DRAFT);
+
+        return invoiceMapper.toResponse(invoiceRepository.save(invoice));
+    }
+
+    @Override
+    public InvoiceResponse cancelInvoice(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        invoice.setInvoiceStatus(InvoiceStatus.CANCELLED);
+
+        return invoiceMapper.toResponse(invoiceRepository.save(invoice));
+    }
+
+
+    @Override
+    public InvoiceResponse activateInvoice(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        invoice.setInvoiceStatus(InvoiceStatus.ACTIVE);
+
+        return invoiceMapper.toResponse(invoiceRepository.save(invoice));
+    }
+
+
+    @Override
+    public InvoiceResponse markOverdue(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        invoice.setInvoiceStatus(InvoiceStatus.OVERDUE);
+
+        return invoiceMapper.toResponse(invoiceRepository.save(invoice));
+    }
+
+    @Override
+    public InvoiceResponse updateStatus(Long id, InvoiceStatus status) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        invoice.setInvoiceStatus(status);
+
+        return invoiceMapper.toResponse(invoiceRepository.save(invoice));
+    }
+
+
+    // =====================================
+    // Send Invoice
+    // =====================================
+
+    @Override
+    public InvoiceResponse sendInvoice(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        byte[] pdf = pdfService.generateInvoicePdf(invoice);
+
+        emailService.sendInvoice(
+                invoice.getCustomer().getEmail(),
+                "Invoice " + invoice.getInvoiceNumber(),
+                pdf
+        );
+
+        invoice.setInvoiceStatus(InvoiceStatus.SENT);
+
+        invoiceRepository.save(invoice);
+
+        return invoiceMapper.toResponse(invoice);
+    }
+
+    // =====================================
+    // Mark Paid
+    // =====================================
+
+    @Override
+    public InvoiceResponse markInvoiceAsPaid(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        if (invoice.getInvoiceStatus() == InvoiceStatus.DRAFT) {
+            throw new IllegalStateException("Draft invoice cannot be marked as PAID");
+        }
+
+        invoice.setInvoiceStatus(InvoiceStatus.PAID);
+
+        invoiceRepository.save(invoice);
+
+        return invoiceMapper.toResponse(invoice);
+    }
+
+    // =====================================
+    // Email Invoice
+    // =====================================
+
+    @Override
+    public void emailInvoice(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        byte[] pdf = pdfService.generateInvoicePdf(invoice);
+
+        emailService.sendInvoice(
+                invoice.getCustomer().getEmail(),
+                "Invoice " + invoice.getInvoiceNumber(),
+                pdf
+        );
+    }
+
+    // =====================================
+    // Download PDF
+    // =====================================
+
+    @Override
+    public byte[] downloadInvoicePdf(Long id) {
+
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Invoice not found"));
+
+        return pdfService.generateInvoicePdf(invoice);
     }
 
 
