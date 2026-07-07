@@ -4,6 +4,7 @@ import com.inm.dto.commonResponses.PageResponse;
 import com.inm.dto.invoice.request.InvoiceRequest;
 import com.inm.dto.invoice.response.InvoiceItemResponse;
 import com.inm.dto.invoice.response.InvoiceResponse;
+import com.inm.enums.InvoiceStatus;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -16,12 +17,15 @@ public interface InvoiceService {
 
     InvoiceResponse getById(Long id);
 
+    String generateInvoiceNumber();
+
     PageResponse<InvoiceResponse> getInvoices(
             String search,
             int page,
             int size,
             String sortBy,
-            String direction);
+            String direction,
+            InvoiceStatus invoiceStatus);
 
     PageResponse<InvoiceResponse> getCustomerInvoices(
             Long customerId,

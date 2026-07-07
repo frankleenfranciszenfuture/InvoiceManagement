@@ -22,6 +22,6 @@ public interface InvoiceMapper {
 
     @Mapping(source = "salesPerson.id", target = "salesPersonId")
     @Mapping(source = "salesPerson.salesPersonName", target = "salesPersonName")
-    @Mapping(target = "status", source = "status")
+    @Mapping(target = "invoiceStatus", source = "invoiceStatus")
     InvoiceResponse toResponse(Invoice invoice);
 }

@@ -1,6 +1,6 @@
 package com.inm.dto.invoice.request;
 
-import com.inm.InvoiceStatus;
+import com.inm.enums.InvoiceStatus;
 import lombok.Data;
 
 import java.time.LocalDate;
@@ -29,5 +29,5 @@ public class InvoiceRequest {
 
     private List<InvoiceItemRequest> items;
 
-    private InvoiceStatus status;
+    private InvoiceStatus invoiceStatus;
 }

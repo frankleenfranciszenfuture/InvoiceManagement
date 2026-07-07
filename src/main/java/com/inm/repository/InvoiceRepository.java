@@ -1,6 +1,9 @@
 package com.inm.repository;
 
+import com.inm.entity.Customer;
 import com.inm.entity.Invoice;
+import com.inm.enums.CustomerStatus;
+import com.inm.enums.InvoiceStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -44,4 +47,35 @@ AND (
             @Param("customerId") Long customerId,
             @Param("search") String search,
             Pageable pageable);
+
+
+    @Query("""
+SELECT i
+FROM Invoice i
+WHERE i.invoiceStatus = :invoiceStatus
+AND (
+    :search IS NULL
+    OR :search = ''
+    OR LOWER(i.invoiceNumber) LIKE LOWER(CONCAT('%', :search, '%'))
+    OR LOWER(i.subject) LIKE LOWER(CONCAT('%', :search, '%'))
+)
+""")
+    Page<Invoice> searchInvoiceByStatus(
+            @Param("invoiceStatus") InvoiceStatus invoiceStatus,
+            @Param("search") String search,
+            Pageable pageable
+    );
+
+
+
+            @Query(value = """
+        SELECT invoice_number
+        FROM invoices
+        WHERE invoice_number LIKE CONCAT(:prefix, '%')
+        ORDER BY invoice_number DESC
+        LIMIT 1
+        """, nativeQuery = true)
+            String findLastInvoiceNumber(@Param("prefix") String prefix);
+
 }
+

@@ -6,6 +6,9 @@ import com.inm.dto.invoice.request.InvoiceRequest;
 import com.inm.dto.invoice.response.InvoiceItemResponse;
 import com.inm.dto.invoice.response.InvoiceResponse;
 import com.inm.entity.Invoice;
+import com.inm.enums.CustomerStatus;
+import com.inm.enums.InvoiceStatus;
+import com.inm.enums.ItemStatus;
 import com.inm.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -13,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/invoices")
@@ -72,14 +76,29 @@ public class InvoiceController {
         );
     }
 
+    @GetMapping("/next-number")
+    public ResponseEntity<ApiResponse> getNextInvoiceNumber() {
+
+        String invoiceNumber = invoiceService.generateInvoiceNumber();
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Invoice number generated successfully.",
+                        Map.of("invoiceNumber", invoiceNumber)
+                )
+        );
+    }
 
     @GetMapping
     public ResponseEntity<ApiResponse<PageResponse<InvoiceResponse>>> getInvoices(
+
             @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int size,
             @RequestParam(defaultValue = "invoiceDate") String sortBy,
-            @RequestParam(defaultValue = "desc") String direction) {
+            @RequestParam(defaultValue = "desc") String direction,
+            @RequestParam(defaultValue = "ALL") InvoiceStatus invoiceStatus)
+    {
 
         PageResponse<InvoiceResponse> response =
                 invoiceService.getInvoices(
@@ -87,7 +106,8 @@ public class InvoiceController {
                         page,
                         size,
                         sortBy,
-                        direction
+                        direction,
+                        invoiceStatus
                 );
 
         return ResponseEntity.ok(

@@ -1,12 +1,14 @@
 package com.inm.service.impl;
 
-import com.inm.InvoiceStatus;
 import com.inm.dto.commonResponses.PageResponse;
 import com.inm.dto.invoice.request.InvoiceItemRequest;
 import com.inm.dto.invoice.request.InvoiceRequest;
 import com.inm.dto.invoice.response.InvoiceItemResponse;
 import com.inm.dto.invoice.response.InvoiceResponse;
 import com.inm.entity.*;
+import com.inm.enums.CustomerStatus;
+import com.inm.enums.InvoiceStatus;
+import com.inm.enums.ItemStatus;
 import com.inm.exception.ResourceNotFoundException;
 import com.inm.mapper.InvoiceItemMapper;
 import com.inm.mapper.InvoiceMapper;
@@ -25,6 +27,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,6 +54,8 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Invoice invoice = invoiceMapper.toEntity(request);
 
+        invoice.setInvoiceNumber(generateInvoiceNumber());
+
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new RuntimeException("Customer not found"));
 
@@ -60,7 +65,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         invoice.setCustomer(customer);
         invoice.setSalesPerson(salesPerson);
-        invoice.setStatus(request.getStatus());
+
+        if (invoice.getInvoiceStatus() == null) {
+            invoice.setInvoiceStatus(InvoiceStatus.ACTIVE);
+        }
 
         prepareInvoiceItems(invoice, request.getItems());
 
@@ -96,6 +104,11 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setCustomer(customer);
         invoice.setSalesPerson(salesPerson);
 
+        if (invoice.getInvoiceStatus() == null) {
+            invoice.setInvoiceStatus(InvoiceStatus.ACTIVE);
+        }
+
+
         prepareInvoiceItems(invoice, request.getItems());
 
         return invoiceMapper.toResponse(invoiceRepository.save(invoice));
@@ -121,7 +134,8 @@ public class InvoiceServiceImpl implements InvoiceService {
             int page,
             int size,
             String sortBy,
-            String direction) {
+            String direction,
+            InvoiceStatus invoiceStatus) {
 
         Sort sort = direction.equalsIgnoreCase("desc")
                 ? Sort.by(sortBy).descending()
@@ -129,8 +143,17 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         Pageable pageable = PageRequest.of(page, size, sort);
 
-        Page<Invoice> invoicePage =
-                invoiceRepository.searchInvoices(search, pageable);
+        Page<Invoice> invoicePage;
+
+        if (invoiceStatus == InvoiceStatus.ALL) {
+            invoicePage = invoiceRepository.searchInvoices(search, pageable);
+        } else {
+            invoicePage = invoiceRepository.searchInvoiceByStatus(
+                    invoiceStatus,
+                    search,
+                    pageable
+            );
+        }
 
         List<InvoiceResponse> invoices = invoicePage
                 .stream()
@@ -309,5 +332,24 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setSubTotal(subTotal);
         invoice.setTaxAmount(taxAmount);
         invoice.setTotalAmount(subTotal.add(taxAmount));
+    }
+
+    @Override
+    public String generateInvoiceNumber() {
+
+        int year = LocalDate.now().getYear();
+
+        String prefix = "INV" + year + "-";
+
+        String lastInvoice = invoiceRepository.findLastInvoiceNumber(prefix);
+
+        int next = 1;
+
+        if (lastInvoice != null && !lastInvoice.isBlank()) {
+            String number = lastInvoice.substring(prefix.length());
+            next = Integer.parseInt(number) + 1;
+        }
+
+        return prefix + String.format("%04d", next);
     }
 }

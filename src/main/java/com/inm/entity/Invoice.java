@@ -1,7 +1,6 @@
 package com.inm.entity;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.inm.InvoiceStatus;
+import com.inm.enums.InvoiceStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,6 +24,7 @@ public class Invoice {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false, unique = true)
     private String invoiceNumber;
 
     private LocalDate invoiceDate;
@@ -60,5 +60,5 @@ public class Invoice {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private InvoiceStatus status ;
+    private InvoiceStatus invoiceStatus ;
 }

@@ -1,8 +1,6 @@
 package com.inm.dto.invoice.response;
 
-import com.inm.InvoiceStatus;
-import com.inm.dto.customer.CustomerDTO;
-import com.inm.entity.Customer;
+import com.inm.enums.InvoiceStatus;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -37,6 +35,6 @@ public class InvoiceResponse {
 
     private List<InvoiceItemResponse> items;
 
-    private InvoiceStatus status;
+    private InvoiceStatus invoiceStatus;
 
 }
