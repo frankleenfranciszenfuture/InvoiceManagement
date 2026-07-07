@@ -105,6 +105,7 @@ const itemMasterSlice = createSlice({
       })
       .addCase(loadItemMasters.fulfilled, (state, action) => {
         state.loading = false;
+        console.log("Payload:", action.payload);
         state.itemMasters = action.payload;
       })
       .addCase(loadItemMasters.rejected, (state, action) => {

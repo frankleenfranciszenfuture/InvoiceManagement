@@ -1,4 +1,9 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import {
+  createSlice,
+  createAsyncThunk,
+  createSelector,
+} from "@reduxjs/toolkit";
+import api, { fetchNextInvoiceNumber } from "../api/api";
 import {
   fetchInvoices,
   fetchInvoiceById,
@@ -94,6 +99,18 @@ export const loadInvoiceItemById = createAsyncThunk(
   },
 );
 
+// 6.Invoice number generated
+export const loadNextInvoiceNumber = createAsyncThunk(
+  "invoice/loadNextInvoiceNumber",
+  async (_, { rejectWithValue }) => {
+    try {
+      return await fetchNextInvoiceNumber();
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  },
+);
+
 export const removeInvoice = createAsyncThunk(
   "invoice/removeInvoice",
   async (id, { rejectWithValue }) => {
@@ -136,6 +153,7 @@ const makeBlankItem = () => ({
 });
 
 const initialState = {
+  invoiceNumber: "",
   customer: {
     customers: [],
   },
@@ -161,7 +179,7 @@ const initialState = {
 
   customerName: "",
   salesPersonName: "",
-  invoiceNumber: "",
+
   invoiceDate: new Date().toISOString().split("T")[0],
   dueDate: "",
   terms: "",
@@ -378,6 +396,20 @@ const invoiceSlice = createSlice({
         state.error = action.payload || "Failed to fetch invoices";
       })
 
+      //
+
+      .addCase(loadNextInvoiceNumber.pending, (state) => {
+        console.log("Pending...");
+      })
+
+      .addCase(loadNextInvoiceNumber.fulfilled, (state, action) => {
+        state.invoiceNumber = action.payload.data.invoiceNumber;
+      })
+
+      .addCase(loadNextInvoiceNumber.rejected, (state, action) => {
+        console.log("Rejected:", action.payload);
+      })
+
       // ---- loadInvoiceById ----
       .addCase(loadInvoiceById.pending, (state) => {
         state.loading = true;
@@ -475,12 +507,13 @@ const invoiceSlice = createSlice({
 // ==========================================
 // Memoized Selectors
 // ==========================================
-export const selectTotal = (state) => {
-  return (state.invoice?.items || []).reduce((sum, item) => {
-    const amount = Number(item.amount) || 0;
-    return sum + amount;
-  }, 0);
-};
+const selectItems = (state) => state.invoice?.items ?? [];
+
+export const selectTotal = createSelector([selectItems], (items) =>
+  items.reduce((sum, item) => {
+    return sum + (Number(item.amount) || 0);
+  }, 0),
+);
 
 export const {
   setField,

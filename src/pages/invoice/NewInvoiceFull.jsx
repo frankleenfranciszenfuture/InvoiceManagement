@@ -1,9 +1,10 @@
 import React from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import DatePicker from "react-datepicker";
 import {
   loadCustomers,
+  loadNextInvoiceNumber,
   setField,
   setCustomerName,
   setSalesPersonName,
@@ -67,31 +68,34 @@ import InvoiceAddPaymentCard from "./InvoiceAddPaymentCard";
 export default function NewInvoiceFull() {
   const dispatch = useDispatch();
 
+  const EMPTY_ARRAY = [];
+
+  const EMPTY_OBJECT = {};
+
   const customerDropdownRef = useRef(null);
   const salesPersonDropdownRef = useRef(null);
   const itemDropdownRef = useRef(null);
   const saveMenuRef = useRef(null);
 
-  const invoice = useSelector((state) => state?.invoice ?? {});
-  const items = invoice?.items ?? [];
 
+  const invoice = useSelector(
+    (state) => state.invoice ?? EMPTY_OBJECT
+  );
 
+  const items = useSelector(
+    (state) => state.invoice?.items ?? EMPTY_ARRAY
+  );
 
-
-  // NOTE: these previously read from state.customer.customers / state.salesPersons,
-  // which don't exist in the store — the invoice slice is where this data actually
-  // lives (see invoiceSlice.js). That mismatch, combined with calling .toLowerCase()
-  // directly instead of through a null-safe helper, is what caused the crash.
   const customers = useSelector(
-    (state) => state.invoice.customers || []
+    (state) => state.invoice?.customers ?? EMPTY_ARRAY
   );
 
   const salesPersons = useSelector(
-    (state) => state.salesPerson.salesPersons ?? []
+    (state) => state.salesPerson?.salesPersons ?? EMPTY_ARRAY
   );
 
   const itemMasters = useSelector(
-    (state) => state.itemMaster.itemMasters ?? []
+    (state) => state.itemMaster?.items ?? EMPTY_ARRAY
   );
 
   const total = useSelector(selectTotal);
@@ -124,6 +128,8 @@ export default function NewInvoiceFull() {
     (state) => state.invoice?.openSalesPerson ?? ""
   );
 
+  const invoiceNumber = useSelector((state) => state.invoice.invoiceNumber);
+
   const showSaveMenu = useSelector((state) => state.invoice?.showSaveMenu);
 
   const [showSummary, setShowSummary] = useState(false);
@@ -139,26 +145,35 @@ export default function NewInvoiceFull() {
   const safeNumber = (v) => Number(v ?? 0);
 
   //customers
-  const filteredCustomers = customers.filter((customer) =>
-    (customer.displayName || "")
-      .toLowerCase()
-      .includes((customerSearch || "").toLowerCase())
-  );
+  const filteredCustomers = useMemo(() => {
+    return customers.filter((customer) =>
+      customer.displayName
+        ?.toLowerCase()
+        .includes(customerSearch.toLowerCase())
+    );
+  }, [customers, customerSearch]);
 
 
   //sales
-  const filteredSalesPersons = (salesPersons ?? []).filter((person) =>
-    (person.salesPersonName ?? "")
-      .toLowerCase()
-      .includes((salesPersonSearch ?? "").toLowerCase())
-  );
+  const filteredSalesPersons = useMemo(() => {
+    return salesPersons.filter((person) =>
+      person.salesPersonName
+        ?.toLowerCase()
+        .includes(salesPersonSearch.toLowerCase())
+    );
+  }, [salesPersons, salesPersonSearch]);
+
 
   //items
-  const filteredItems = itemMasters.filter((item) =>
-    (item.itemName ?? "")
-      .toLowerCase()
-      .includes(itemSearch.toLowerCase())
-  );
+  const filteredItems = useMemo(() => {
+    return itemMasters.filter((item) =>
+      item.itemName
+        ?.toLowerCase()
+        .includes(itemSearch.toLowerCase())
+    );
+  }, [itemMasters, itemSearch]);
+
+
 
   const handleTermsChange = (term) => {
     dispatch(setTerms(term));
@@ -174,14 +189,23 @@ export default function NewInvoiceFull() {
     dispatch(setDueDate(invoiceDate.toISOString().split("T")[0]));
   };
 
-  console.log(invoice.customers[0]);
-
   useEffect(() => {
+    dispatch(resetInvoice());
+
     dispatch(loadCustomers());
     dispatch(loadSalesPersons());
     dispatch(loadItemMasters());
-
   }, [dispatch]);
+
+
+  useEffect(() => {
+    console.log("Loading next invoice number...");
+    dispatch(loadNextInvoiceNumber());
+  }, [dispatch]);
+
+  useEffect(() => {
+    console.log("Redux invoice number:", invoiceNumber);
+  }, [invoiceNumber]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -412,9 +436,10 @@ export default function NewInvoiceFull() {
 
               <div className="relative w-[330px]">
                 <input
-                  value={invoice.invoiceNumber}
-                  onChange={(e) => dispatch(setInvoiceNumber(e.target.value))}
-                  className="w-full border border-gray-300 rounded px-3 py-2 pr-8"
+                  value={invoiceNumber || ""}
+                  readOnly
+                  placeholder="Generating..."
+                  className="w-full border border-gray-300 rounded px-3 py-2 pr-8 bg-gray-100"
                 />
 
                 <Settings

@@ -29,11 +29,6 @@ export default function ItemTable() {
     const error = useSelector((state) => state.itemMaster.error);
 
 
-
-    useEffect(() => {
-        dispatch(loadItemMasters());
-    }, [dispatch]);
-
     if (loading) return <p>Loading...</p>;
 
     if (error) return <p className="text-red-500">{error}</p>;

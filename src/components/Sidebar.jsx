@@ -52,18 +52,28 @@ const NAV = [
       { label: "Draft", status: "DRAFT" },
     ],
   },
+
+  {
+    label: "Invoices",
+    icon: FolderKanban,
+    basePath: "/invoices",
+    queryKey: "invoiceStatus",
+    addTo: "/invoices/new",
+    children: [
+      { label: "All", status: "ALL" },
+      { label: "Active", status: "ACTIVE" },
+      { label: "Inactive", status: "INACTIVE" },
+      { label: "Draft", status: "DRAFT" },
+    ],
+  },
+
   {
     to: "/quotes",
     icon: FileText,
     label: "Quotes",
     addTo: "/quotes/new",
   },
-  {
-    to: "/invoices",
-    icon: FileText,
-    label: "Invoices",
-    addTo: "/invoices/new",
-  },
+
   {
     to: "/view",
     icon: Truck,

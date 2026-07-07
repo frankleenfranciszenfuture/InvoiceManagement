@@ -230,9 +230,9 @@ export default function InvTab() {
                 {/* Status */}
                 <td className="px-5 py-3 font-semibold">
                   <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[invoice.status]}`}
+                    className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[invoice.invoiceStatus]}`}
                   >
-                    {invoice.status || "—"}
+                    {invoice.invoiceStatus || "—"}
                   </span>
                 </td>
 

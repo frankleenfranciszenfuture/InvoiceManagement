@@ -1,16 +1,17 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import InvTab from "../pages/InvTab";
-import Navbar from "../components/Navbar";
-import NavbarInvoice from "../components/NavbarInvoice";
+import NavbarInvoice from "./invoices/NavbarInvoice";
 import BottomActionBar from "../../../invoice/src/components/BottomActionBar";
-
+import { useSearchParams } from "react-router-dom";
 
 import {
   loadCustomers,
   loadInvoices,
 } from "../slices/invoiceSlice";
 
+import { setInvoiceStatus } from "../slices/invoices/InvoiceViewSlice";
 import {
   Search,
   RotateCcw,
@@ -25,11 +26,15 @@ import {
   ArrowDown,
   UserCircle,
   Plus,
+  Loader2,
 } from "lucide-react";
 
 
 export default function InvoiceDashboard() {
   const dispatch = useDispatch();
+  const [searchParams] = useSearchParams();
+
+  const navigate = useNavigate();
 
   const {
     invoices = [],
@@ -39,12 +44,35 @@ export default function InvoiceDashboard() {
     totalPages,
   } = useSelector((state) => state.invoice);
 
+  const { search } = useSelector((state) => state.invoiceView);
+
+  const invoiceStatus = searchParams.get("invoiceStatus") || "ALL";
 
   useEffect(() => {
-    dispatch(loadCustomers({ page, size: pageSize }));
-    dispatch(loadInvoices({ page, size: pageSize }));
-  }, [dispatch, page, pageSize]);
+    dispatch(setInvoiceStatus(invoiceStatus));
 
+    dispatch(
+      loadInvoices({
+        page,
+        size: pageSize,
+        search,
+        invoiceStatus,
+      })
+    );
+  }, [dispatch, page, pageSize, search, invoiceStatus]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-white">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <p className="mt-4 text-sm font-medium text-gray-700">
+            Loading invoices...
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-[13px] overflow-hidden">
       {/* Form Container Wrapper allowing separate inner scrolling */}
@@ -52,39 +80,31 @@ export default function InvoiceDashboard() {
         <div className="px-2 py-5 max-w-30xl w-full ">
           <NavbarInvoice />
           <>
-            {loading ? (
-              <div className="min-h-full flex items-center justify-center text-gray-500 mt-30">
-                Loading invoices...
-              </div>
-            ) : invoices.length > 0 ? (
+            {invoices.length > 0 ? (
               <InvTab />
             ) : (
-              <div className="min-h-full flex flex-col items-center justify-center gap-3 px-4">
-                <div className="relative w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-1 flex-shrink-0 mt-30">
-                  <UserCircle className="w-14 h-14 text-gray-400" />
-                  <div className="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                    <Plus className="w-4 h-4" />
-                  </div>
-                </div>
+              <div className="flex flex-col items-center justify-center py-16">
+                <h2 className="text-lg font-semibold text-gray-800">
+                  No records found
+                </h2>
 
-                <p className="text-base font-medium text-gray-800 text-center">
-                  Every sale starts with a Invoice
-                </p>
-                <p className="text-sm text-gray-500 text-center max-w-sm">
-                  Create and manage your customers and their contact persons,
-                  all in one place.
+                <p className="mt-2 text-sm text-gray-500 text-center max-w-md">
+                  There are no items to display. Create a new item or import an existing file to get started.
                 </p>
 
-                <div className="flex items-center gap-2.5 mt-1 flex-wrap justify-center">
+                <div className="flex items-center gap-3 mt-6">
                   <button
-                    // onClick={onCreateNew}
-                    className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
+                    onClick={() => navigate("/items/new")}
+                    className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition"
                   >
-                    <Plus className="w-4 h-4" />
-                    Create New Customer
+                    <Plus size={16} />
+                    Create New Inoice
                   </button>
-                  <button className="flex items-center gap-2 bg-white text-gray-700 text-sm border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors whitespace-nowrap">
-                    <Download className="w-4 h-4" />
+
+                  <button
+                    className="flex items-center gap-2 border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition"
+                  >
+                    <Download size={16} />
                     Import File
                   </button>
                 </div>

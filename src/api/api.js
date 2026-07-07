@@ -87,6 +87,11 @@ export const fetchInvoices = async (params) => {
   return extractData(response); // 🟢 Add .then(extractData) here!
 };
 
+export const fetchNextInvoiceNumber = async () => {
+  const response = await api.get("/invoices/next-number");
+  return extractData(response);
+};
+
 export const fetchInvoiceById = (id) => api.get(`/invoices/${id}`);
 
 export const fetchCustomerInvoices = (customerId, params) =>

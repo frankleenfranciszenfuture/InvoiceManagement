@@ -25,6 +25,7 @@ import {
   UserCircle,
   MoreHorizontal,
   Plus,
+  Loader2,
 } from "lucide-react";
 import CustomerTable from "./CustomerTable";
 import NavbarCustomer from "../components/NavbarCustomer";
@@ -65,6 +66,18 @@ export default function CustomerDashboard() {
     );
   }, [dispatch, page, pageSize, search, status]);
 
+  if (loading) {
+    return (
+      <div className="flex flex-1 items-center justify-center bg-white">
+        <div className="flex flex-col items-center">
+          <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
+          <p className="mt-4 text-sm font-medium text-gray-700">
+            Loading Customers...
+          </p>
+        </div>
+      </div>
+    );
+  }
   return (
     <div className="flex h-screen bg-gray-50 font-sans text-[13px] overflow-hidden">
       {/* Form Container Wrapper allowing separate inner scrolling */}
