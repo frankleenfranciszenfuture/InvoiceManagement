@@ -8,8 +8,11 @@ import {
   setField,
   setCustomerName,
   setSalesPersonName,
+  setCustomerId,
+  setSalesPersonId,
   setInvoiceNumber,
   setOrderNumber,
+  setSubject,
   setInvoiceDate,
   setTerms,
   setDueDate,
@@ -32,6 +35,12 @@ import {
   toggleSaveMenu,
   setOpenSalesPerson,
   setSalesPersonSearch,
+
+  updateInvoiceField,
+  selectSubtotal,
+  selectTotalTax,
+  selectDiscount,
+  selectGrandTotal,
 } from "../../slices/invoiceSlice";
 
 import { loadSalesPersons } from "../../slices/salesPersonSlice";
@@ -63,7 +72,8 @@ import {
   MoreHorizontal
 } from "lucide-react";
 import InvoiceAddPaymentCard from "./InvoiceAddPaymentCard";
-
+import BottomActionBarInvoices from "./BottomActionBarInvoices";
+import toast from "react-hot-toast";
 
 export default function NewInvoiceFull() {
   const dispatch = useDispatch();
@@ -95,10 +105,14 @@ export default function NewInvoiceFull() {
   );
 
   const itemMasters = useSelector(
-    (state) => state.itemMaster?.items ?? EMPTY_ARRAY
+    (state) => state.itemMaster?.itemMasters ?? EMPTY_ARRAY
   );
 
-  const total = useSelector(selectTotal);
+  // const total = useSelector(selectTotal);
+  const subtotal = useSelector(selectSubtotal);
+  const discount = useSelector(selectDiscount);
+  const tax = useSelector(selectTotalTax);
+  const total = useSelector(selectGrandTotal);
 
   const openItemDropdown = useSelector(
     (state) => state.invoice?.openItemDropdown
@@ -203,9 +217,6 @@ export default function NewInvoiceFull() {
     dispatch(loadNextInvoiceNumber());
   }, [dispatch]);
 
-  useEffect(() => {
-    console.log("Redux invoice number:", invoiceNumber);
-  }, [invoiceNumber]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -268,6 +279,214 @@ export default function NewInvoiceFull() {
     selected: false,
   });
 
+
+
+  // =============================
+  // Save Actions
+  // =============================
+
+  const handleSaveDraft = async () => {
+    try {
+      const result = await dispatch(
+        createInvoice({
+          ...invoice,
+          invoiceStatus: "DRAFT",
+        })
+      ).unwrap();
+
+      toast.success("Draft saved successfully");
+      console.log(result);
+    } catch (error) {
+      toast.error(error.message || "Failed to save draft");
+    }
+  };
+
+  const handleSaveAndSend = async () => {
+    try {
+      const result = await dispatch(
+        createInvoice({
+          ...invoice,
+          invoiceStatus: "SENT",
+        })
+      ).unwrap();
+
+      toast.success("Invoice sent successfully");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+
+  const handleSaveAndPrint = async () => {
+    try {
+      await dispatch(
+        createInvoice({
+          ...invoice,
+          invoiceStatus: "ACTIVE",
+        })
+      ).unwrap();
+
+      toast.success("Invoice saved");
+
+      window.print();
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleSaveAndShare = async () => {
+    try {
+      const response = await dispatch(
+        createInvoice({
+          ...invoice,
+          invoiceStatus: "ACTIVE",
+        })
+      ).unwrap();
+
+      const url = `${window.location.origin}/invoice/${response.id}`;
+
+      if (navigator.share) {
+        await navigator.share({
+          title: "Invoice",
+          text: "Invoice",
+          url,
+        });
+      }
+
+      toast.success("Invoice shared");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleSaveAndSendLater = async () => {
+    try {
+      await dispatch(
+        createInvoice({
+          ...invoice,
+          invoiceStatus: "PENDING",
+        })
+      ).unwrap();
+
+      toast.success("Invoice scheduled");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleCancel = () => {
+    dispatch(resetInvoice());
+
+    navigate("/sales/invoices");
+  };
+
+  // =============================
+  // Invoice Actions
+  // =============================
+
+  const handlePreview = () => {
+    dispatch(setPreviewInvoice(invoice));
+
+    navigate("/sales/invoices/preview");
+  };
+
+  const handleDownloadPdf = async () => {
+    try {
+      await dispatch(downloadInvoicePdf(invoice.id)).unwrap();
+
+      toast.success("Downloading PDF");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleGenerateInvoice = async () => {
+    try {
+      await dispatch(generateInvoice()).unwrap();
+
+      toast.success("Invoice Number Generated");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleUpdateInvoice = async () => {
+    try {
+      await dispatch(
+        updateInvoice({
+          id: invoice.id,
+          invoice,
+        })
+      ).unwrap();
+
+      toast.success("Invoice Updated");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDeleteInvoice = async () => {
+    if (!window.confirm("Delete this invoice?")) return;
+
+    try {
+      await dispatch(deleteInvoice(invoice.id)).unwrap();
+
+      toast.success("Invoice Deleted");
+
+      navigate("/sales/invoices");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDuplicateInvoice = async () => {
+    try {
+      await dispatch(duplicateInvoice(invoice.id)).unwrap();
+
+      toast.success("Invoice duplicated");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleValidateInvoice = () => {
+    if (!invoice.customerId) {
+      toast.error("Customer is required");
+      return false;
+    }
+
+    if (!invoice.items.length) {
+      toast.error("Add at least one item");
+      return false;
+    }
+
+    if (!invoice.invoiceDate) {
+      toast.error("Invoice date required");
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleResetInvoice = () => {
+    dispatch(resetInvoice());
+
+    toast.success("Invoice reset");
+  };
+
+  const handlePrintInvoice = () => {
+    window.print();
+  };
+
+  const handleEmailInvoice = async () => {
+    try {
+      await dispatch(emailInvoice(invoice.id)).unwrap();
+
+      toast.success("Invoice emailed");
+    } catch (error) {
+      toast.error(error.message);
+    }
+  };
 
 
   return (
@@ -463,6 +682,26 @@ export default function NewInvoiceFull() {
                 />
               </div>
             </div>
+
+
+            {/* Subject */}
+
+            <div className="flex items-center mb-4">
+              <label className="w-44 text-sm font-medium shrink-0">
+                Subject<span>#</span>
+              </label>
+
+              <div className="relative w-[330px]">
+                <input
+                  value={invoice.subject}
+                  onChange={(e) => dispatch(setSubject(e.target.value))}
+                  className="w-full border border-gray-300 rounded px-3 py-2 pr-8"
+                />
+              </div>
+            </div>
+
+
+
             {/* Invoice Date + Terms + Due Date */}
             <div className="flex items-center">
               <label className="w-44 text-sm font-medium text-red-500 shrink-0">
@@ -789,7 +1028,7 @@ export default function NewInvoiceFull() {
                                         }
                                       }}
                                       className="cursor-pointer rounded-md px-3 py-3 transition-all
-                                      hover:bg-blue-600 hover:text-white"
+                                      hover:bg-blue-600  hover:text-white"
                                     >
                                       <div className="font-semibold uppercase group-hover:text-gray-200">
                                         {itemMaster.itemName}
@@ -913,6 +1152,7 @@ export default function NewInvoiceFull() {
               </p>
             </div>
 
+
             {/* Total block */}
             <div className="flex-1 max-w-sm ml-auto">
               <div className="border border-gray-100 mb-2 px-2">
@@ -920,50 +1160,107 @@ export default function NewInvoiceFull() {
                 <div className="mt-2 text-sm text-gray-600 space-y-1 border-b border-gray-200 pt-2 py-2">
                   <div className="flex justify-between">
                     <span>Sub Total</span>
-                    <span>₹{fmt(total)}</span>
-                  </div>
-                  <div className="flex justify-between mt-6">
-                    <span>Discount</span>
-                    <span>₹{fmt(total)}</span>
+                    <span>₹{fmt(subtotal)}</span>
                   </div>
 
-                  <div className="flex justify-between mt-6">
-                    <div className="flex gap-2">
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="salesType"
-                          value="Business"
-                          onChange={handleChange("salesType")}
-                          className="w-4 h-4 text-blue-600 accent-blue-600"
-                        />
-                        <span>TDS</span>
-                      </label>
 
-                      <label className="flex items-center gap-1.5 cursor-pointer">
-                        <input
-                          type="radio"
-                          name="salesType"
-                          value="Business"
-                          onChange={handleChange("salesType")}
-                          className="w-4 h-4 text-blue-600 accent-blue-600"
-                        />
-                        <span>TCS</span>
-                      </label>
+                  <div className="space-y-3">
+                    {/* Discount */}
+                    <div className="grid grid-cols-[90px_90px_1fr] items-center gap-4">
+                      <span>Discount</span>
+
+                      <input
+                        type="number"
+                        value={invoice.discount ?? ""}
+                        onChange={(e) =>
+                          dispatch(
+                            updateInvoiceField({
+                              field: "discount",
+                              value: Number(e.target.value),
+                            })
+                          )
+                        }
+                        className="w-full border border-gray-300 rounded px-2 py-1 text-center"
+                      />
+
+                      <span className="text-right">
+                        ₹{fmt(discount)}
+                      </span>
                     </div>
-                    <span>₹{fmt(total)}</span>
+
+                    {/* Tax */}
+                    <div className="grid grid-cols-[90px_90px_1fr] items-center gap-4">
+                      <span>Tax</span>
+
+                      <input
+                        type="number"
+                        value={invoice.taxPercent ?? ""}
+                        onChange={(e) =>
+                          dispatch(
+                            updateInvoiceField({
+                              field: "taxPercent",
+                              value: Number(e.target.value),
+                            })
+                          )
+                        }
+                        className="w-full border border-gray-300 rounded px-2 py-1 text-center"
+                      />
+
+                      <span className="text-right font-medium">
+                        ₹{fmt(tax)}
+                      </span>
+                    </div>
+
+
+                    {/* Type */}
+                    <div className="grid grid-cols-[90px_90px_1fr] items-center gap-4">
+                      <span>Type</span>
+
+                      <div className="flex gap-4">
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="salesType"
+                            value="TDS"
+                            checked={invoice.salesType === "TDS"}
+                            onChange={handleChange("salesType")}
+                            className="w-4 h-4 accent-blue-600"
+                          />
+                          <span>TDS</span>
+                        </label>
+
+                        <label className="flex items-center gap-2 cursor-pointer">
+                          <input
+                            type="radio"
+                            name="salesType"
+                            value="TCS"
+                            checked={invoice.salesType === "TCS"}
+                            onChange={handleChange("salesType")}
+                            className="w-4 h-4 accent-blue-600"
+                          />
+                          <span>TCS</span>
+                        </label>
+                      </div>
+
+                      <span className="text-right">
+                        ₹{fmt(tax)}
+                      </span>
+                    </div>
+
+                    {/* Total */}
+                    <div className="flex items-center border-t  border-gray-200 pt-3 font-semibold">
+                      <span>Total (₹)</span>
+                      <span className="ml-auto">
+                        {fmt(total)}
+                      </span>
+                    </div>
+
                   </div>
-                </div>
-                {/* )} */}
-                <div className="flex justify-between items-center py-3">
-                  <span className="text-sm font-semibold text-gray-700">
-                    Total (₹)
-                  </span>
-                  <span className="text-sm font-semibold text-gray-500">
-                    {fmt(total)}
-                  </span>
                 </div>
               </div>
+
+
+
               <button
                 onClick={() => setShowSummary(!showSummary)}
                 className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 w-full justify-end"
@@ -1010,7 +1307,7 @@ export default function NewInvoiceFull() {
           <div className="flex items-center justify-between">
 
             {/* Left Side - Buttons */}
-            <div className="flex items-center gap-3">
+            {/* <div className="flex items-center gap-3">
               <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
                 Save as Draft
               </button>
@@ -1051,7 +1348,28 @@ export default function NewInvoiceFull() {
               <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
                 Cancel
               </button>
-            </div>
+            </div> */}
+
+            <BottomActionBarInvoices
+              onSaveDraft={handleSaveDraft}
+              onSaveAndSend={handleSaveAndSend}
+              onSaveAndPrint={handleSaveAndPrint}
+              onSaveAndShare={handleSaveAndShare}
+              onSaveAndSendLater={handleSaveAndSendLater}
+              onCancel={handleCancel}
+              onPreview={handlePreview}
+              onDownloadPdf={handleDownloadPdf}
+              onGenerateInvoice={handleGenerateInvoice}
+              onUpdateInvoice={handleUpdateInvoice}
+              onDeleteInvoice={handleDeleteInvoice}
+              onDuplicateInvoice={handleDuplicateInvoice}
+              onValidateInvoice={handleValidateInvoice}
+              onResetInvoice={handleResetInvoice}
+              onPrintInvoice={handlePrintInvoice}
+              onEmailInvoice={handleEmailInvoice}
+
+
+            />
 
             {/* Right Side - Total */}
             <div className="flex items-center gap-3">
@@ -1075,8 +1393,11 @@ export default function NewInvoiceFull() {
               </div>
 
             </div>
+            {/*  */}
           </div>
         </div>
+
+        {/*  */}
       </div >
     </div >
 

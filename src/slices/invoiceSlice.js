@@ -8,10 +8,17 @@ import {
   fetchInvoices,
   fetchInvoiceById,
   fetchCustomerInvoices,
+  createInvoice,
+  updateInvoice,
+  deleteInvoice,
+  duplicateInvoice,
+  downloadInvoicePdf,
+  emailInvoice,
+  sendInvoice,
+  markInvoiceAsPaid,
   fetchInvoiceItems,
   fetchInvoiceItemById,
   fetchCustomers,
-  deleteInvoice,
   fetchSalesPersons,
 } from "../api/api";
 
@@ -111,19 +118,19 @@ export const loadNextInvoiceNumber = createAsyncThunk(
   },
 );
 
-export const removeInvoice = createAsyncThunk(
-  "invoice/removeInvoice",
-  async (id, { rejectWithValue }) => {
-    try {
-      await deleteInvoice(id);
-      return id;
-    } catch (error) {
-      return rejectWithValue(
-        error.response?.data || error.message || "Failed to delete invoice",
-      );
-    }
-  },
-);
+// export const removeInvoice = createAsyncThunk(
+//   "invoice/removeInvoice",
+//   async (id, { rejectWithValue }) => {
+//     try {
+//       await deleteInvoice(id);
+//       return id;
+//     } catch (error) {
+//       return rejectWithValue(
+//         error.response?.data || error.message || "Failed to delete invoice",
+//       );
+//     }
+//   },
+// );
 
 export const loadCustomers = createAsyncThunk(
   "invoice/loadCustomers",
@@ -134,6 +141,134 @@ export const loadCustomers = createAsyncThunk(
       return data;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
+    }
+  },
+);
+
+/* ===========================
+   Create Invoice
+=========================== */
+
+export const addInvoice = createAsyncThunk(
+  "invoice/addInvoice",
+  async (invoice, { rejectWithValue }) => {
+    try {
+      const response = await createInvoice(invoice);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Update Invoice
+=========================== */
+
+export const editInvoice = createAsyncThunk(
+  "invoice/editInvoice",
+  async ({ id, invoice }, { rejectWithValue }) => {
+    try {
+      const response = await updateInvoice(id, invoice);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Delete Invoice
+=========================== */
+
+export const removeInvoice = createAsyncThunk(
+  "invoice/removeInvoice",
+  async (id, { rejectWithValue }) => {
+    try {
+      await deleteInvoice(id);
+      return id;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Duplicate Invoice
+=========================== */
+
+export const copyInvoice = createAsyncThunk(
+  "invoice/copyInvoice",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await duplicateInvoice(id);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Send Invoice
+=========================== */
+
+export const sendInvoiceToCustomer = createAsyncThunk(
+  "invoice/sendInvoiceToCustomer",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await sendInvoice(id);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Email Invoice
+=========================== */
+
+export const emailInvoiceToCustomer = createAsyncThunk(
+  "invoice/emailInvoiceToCustomer",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await emailInvoice(id);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Download PDF
+=========================== */
+
+export const downloadInvoice = createAsyncThunk(
+  "invoice/downloadInvoice",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await downloadInvoicePdf(id);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  },
+);
+
+/* ===========================
+   Mark Invoice Paid
+=========================== */
+
+export const payInvoice = createAsyncThunk(
+  "invoice/payInvoice",
+  async (id, { rejectWithValue }) => {
+    try {
+      const response = await markInvoiceAsPaid(id);
+      return response;
+    } catch (err) {
+      return rejectWithValue(err.message);
     }
   },
 );
@@ -176,9 +311,14 @@ const initialState = {
   // .filter(...)` if that guard was ever dropped. Populate this via a
   // thunk (e.g. loadItemMaster) once you have an endpoint for it.
   itemMaster: [],
+  discount: 0,
+  taxPercent: 0,
+  salesType: "",
 
   customerName: "",
+  customerId: "",
   salesPersonName: "",
+  salesPersonId: "",
 
   invoiceDate: new Date().toISOString().split("T")[0],
   dueDate: "",
@@ -228,6 +368,15 @@ const invoiceSlice = createSlice({
     setCustomerName: (state, action) => {
       state.customerName = action.payload;
     },
+
+    setCustomerId: (state, action) => {
+      state.customerName = action.payload;
+    },
+
+    setSalesPersonId: (state, action) => {
+      state.customerName = action.payload;
+    },
+
     setSalesPersonName: (state, action) => {
       state.salesPersonName = action.payload;
     },
@@ -237,6 +386,11 @@ const invoiceSlice = createSlice({
     setOrderNumber: (state, action) => {
       state.orderNumber = action.payload;
     },
+
+    setSubject: (state, action) => {
+      state.subject = action.payload;
+    },
+
     setInvoiceDate: (state, action) => {
       state.invoiceDate = action.payload;
     },
@@ -307,12 +461,24 @@ const invoiceSlice = createSlice({
       }
 
       // Keep amount in sync whenever quantity or rate changes.
-      if (field === "quantity" || field === "rate" || updatedFields) {
+      if (
+        field === "quantity" ||
+        field === "rate" ||
+        field === "discount" ||
+        updatedFields
+      ) {
         const qty = Number(state.items[index].quantity) || 0;
         const rate = Number(state.items[index].rate) || 0;
         state.items[index].amount = qty * rate;
       }
     },
+
+    updateInvoiceField: (state, action) => {
+      const { field, value } = action.payload;
+
+      state[field] = value;
+    },
+
     removeItem: (state, action) => {
       state.items = state.items.filter((item) => item.id !== action.payload);
     },
@@ -324,7 +490,9 @@ const invoiceSlice = createSlice({
       }
     },
     resetInvoice: (state) => {
+      state.customerId = "";
       state.customerName = "";
+      state.salesPersonId = "";
       state.salesPersonName = "";
       state.invoiceNumber = "";
       state.invoiceDate = "";
@@ -353,6 +521,8 @@ const invoiceSlice = createSlice({
       if (action.payload) {
         state.customerName = action.payload.customerName || "";
         state.salesPersonName = action.payload.salesPersonName || "";
+        state.customerId = action.payload.customerId || "";
+        state.salesPersonId = action.payload.salesPersonId || "";
         state.invoiceNumber = action.payload.invoiceNumber || "";
         state.invoiceDate = action.payload.invoiceDate || "";
         state.dueDate = action.payload.dueDate || "";
@@ -515,12 +685,63 @@ export const selectTotal = createSelector([selectItems], (items) =>
   }, 0),
 );
 
+export const selectSubtotal = createSelector([selectItems], (items) =>
+  items.reduce((sum, item) => {
+    return sum + (Number(item.amount) || 0);
+  }, 0),
+);
+
+export const selectDiscount = createSelector(
+  [
+    (state) => state.invoice?.items ?? [],
+    (state) => state.invoice?.discount ?? 0,
+  ],
+  (items, discountPercentage) => {
+    const subtotal = items.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0),
+      0,
+    );
+
+    return (subtotal * discountPercentage) / 100;
+  },
+);
+
+export const selectTotalTax = createSelector(
+  [
+    (state) => state.invoice?.items ?? [],
+    (state) => state.invoice?.discount ?? 0,
+    (state) => state.invoice?.taxPercent ?? 0,
+  ],
+  (items, discount, taxPercent) => {
+    const subtotal = items.reduce(
+      (sum, item) => sum + (Number(item.amount) || 0),
+      0,
+    );
+
+    const discountAmount = (subtotal * discount) / 100;
+
+    const afterDiscount = subtotal - discountAmount;
+
+    return (afterDiscount * taxPercent) / 100;
+  },
+);
+
+export const selectGrandTotal = createSelector(
+  [selectSubtotal, selectDiscount, selectTotalTax],
+  (subtotal, discount, tax) => {
+    return subtotal - discount + tax;
+  },
+);
+
 export const {
   setField,
   setCustomerName,
   setSalesPersonName,
+  setCustomerId,
+  setSalesPersonId,
   setInvoiceNumber,
   setOrderNumber,
+  setSubject,
   setInvoiceDate,
   setTerms,
   setDueDate,
@@ -544,6 +765,7 @@ export const {
   setSalesPersonSearch,
   setCurrentPage,
   setSelectedInvoice,
+  updateInvoiceField,
 } = invoiceSlice.actions;
 
 export const invoiceActions = invoiceSlice.actions;
