@@ -32,8 +32,8 @@ import {
     setSelectedCustomer,
     updateSelectedCustomerField,
     setSelectedCustomerAddressField,
-    resetSelectedCustomer
-
+    resetSelectedCustomer,
+    resetDirty,
 } from "../../slices/customers/customerSlices"
 
 import {
@@ -387,9 +387,6 @@ export default function EditCustomer() {
 
         try {
             await dispatch(saveCustomer()).unwrap();
-
-            dispatch(resetDirty());
-            dispatch(resetSelectedCustomer());
 
             toast.success("Customer updated successfully!");
 
