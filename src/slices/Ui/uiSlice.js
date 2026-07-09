@@ -1,17 +1,28 @@
 import { createSlice } from "@reduxjs/toolkit";
 
+const initialState = {
+  sidebarOpen: true,
+  modal: { open: false, type: null, data: null }, // type: 'createInvoice' | 'createCustomer' | 'editCustomer' | 'viewInvoice'
+  showQuickAddMenu: null,
+
+  leaveDialog: { open: false, nextRoute: null },
+
+  //quick modelview
+  quickCreateOpen: false,
+
+  // profile Menu
+  profileMenuOpen: false,
+
+  //NotificationMenuOpen
+  notificationsOpen: false,
+
+  // settingsMenuOpen
+  settingsOpen: false,
+};
+
 const uiSlice = createSlice({
   name: "ui",
-  initialState: {
-    sidebarOpen: true,
-    modal: { open: false, type: null, data: null }, // type: 'createInvoice' | 'createCustomer' | 'editCustomer' | 'viewInvoice'
-    showQuickAddMenu: null,
-
-    leaveDialog: {
-      open: false,
-      nextRoute: null,
-    },
-  },
+  initialState,
 
   reducers: {
     toggleSidebar: (s) => {
@@ -40,16 +51,45 @@ const uiSlice = createSlice({
       state.modal.data = null;
     },
 
-    toggleQuickAddMenu: (state, action) => {
-      if (state.showQuickAddMenu === action.payload) {
-        state.showQuickAddMenu = null;
-      } else {
-        state.showQuickAddMenu = action.payload;
-      }
+    // quick add menu
+    openQuickCreate: (state) => {
+      state.quickCreateOpen = true;
+    },
+    closeQuickCreate: (state) => {
+      state.quickCreateOpen = false;
+    },
+    toggleQuickCreate: (state) => {
+      state.quickCreateOpen = !state.quickCreateOpen;
     },
 
-    closeQuickAddMenu: (state) => {
-      state.showQuickAddMenu = null;
+    // profile Menu
+
+    toggleProfileMenu: (state) => {
+      state.profileMenuOpen = !state.profileMenuOpen;
+    },
+
+    closeProfileMenu: (state) => {
+      state.profileMenuOpen = false;
+    },
+
+    // NotificationMenu
+
+    toggleNotifications: (state) => {
+      state.notificationsOpen = !state.profileMenuOpen;
+    },
+
+    closeNotifications: (state) => {
+      state.notificationsOpen = false;
+    },
+
+    // Settings
+
+    toggleSettings: (state) => {
+      state.settingsOpen = !state.settingsOpen;
+    },
+
+    closeSettingsMenu: (state) => {
+      state.settingsOpen = false;
     },
   },
 });
@@ -62,5 +102,23 @@ export const {
   closeQuickAddMenu,
   showLeaveDialog,
   hideLeaveDialog,
+
+  // quick view menu
+  openQuickCreate,
+  closeQuickCreate,
+  toggleQuickCreate,
+
+  // profile menu
+  toggleProfileMenu,
+  closeProfileMenu,
+
+  // toggleNotificationsMenu
+  toggleNotifications,
+  closeNotifications,
+
+  // toggleSettings
+
+  toggleSettings,
+  closeSettingsMenu,
 } = uiSlice.actions;
 export default uiSlice.reducer;

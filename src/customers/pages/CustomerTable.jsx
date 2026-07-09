@@ -138,79 +138,81 @@ export default function CustomerTable() {
 
                     <tbody>
                         {customers?.length > 0 ? (
-                            customers.map((c, index) => (
-                                <tr
-                                    key={c.id || index}
-                                    onClick={() => {
-                                        dispatch(setSelectedCustomer(c));
-                                        navigate(`/customers/view/${c.id}`);
-                                    }}
-                                    className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
-                                >
-                                    {/* Customer Info */}
-                                    <td className="px-2 py-3">
-                                        <div className="flex items-center gap-3">
-                                            <div
-                                                className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${getAvatarColor(
-                                                    c.displayName || c.customerName,
-                                                )}`}
-                                            >
-                                                {initials(c.displayName || c.customerName)}
-                                            </div>
-
-                                            <div>
-                                                <p className="font-medium text-gray-800">
-                                                    {c.displayName}
-                                                </p>
-                                                <p className="text-sm text-gray-500">ID: #{c.id}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-
-
-                                    {/* Type */}
-                                    <td className="px-4 py-3">{c.customerType || "—"}</td>
-
-                                    {/* Currency */}
-                                    <td className="px-4 py-3">{c.currency || "—"}</td>
-
-                                    {/* Email */}
-                                    <td className="px-4 py-3">{c.email || "—"}</td>
-
-                                    {/* Mobile */}
-                                    <td className="px-4 py-3">
-                                        {c.mobileCode || "+91"} {c.mobile || "—"}
-                                    </td>
-
-                                    {/* PAN */}
-                                    <td className="px-4 py-3">{c.pan || "—"}</td>
-
-                                    {/* Receivables */}
-                                    <td className="px-4 py-3">{c.receivable || "—"}</td>
-
-                                    {/* UnUsed credits */}
-                                    <td className="px-4 py-3">{c.unusedCredits || "—"}</td>
-
-                                    {/* Status */}
-                                    <td className="px-5 py-3 font-semibold">
-                                        <span
-                                            className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[c.status]}`}
-                                        >
-                                            {c.status || "—"}
-                                        </span>
-                                    </td>
-
-
-                                    {/* Actions */}
-                                    <td className="relative overflow-visible px-4 py-3">
-                                        <div className="flex justify-end">
-                                            <div className="relative group inline-block">
-                                                <button className="p-1 rounded-full bg-blue-500 text-white ">
-                                                    <ChevronDown size={16} />
-                                                </button>
-
+                            [...customers]
+                                .sort((a, b) => a.id - b.id)
+                                .map((c, index) => (
+                                    <tr
+                                        key={c.id || index}
+                                        onClick={() => {
+                                            dispatch(setSelectedCustomer(c));
+                                            navigate(`/customers/view/${c.id}`);
+                                        }}
+                                        className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                                    >
+                                        {/* Customer Info */}
+                                        <td className="px-2 py-3">
+                                            <div className="flex items-center gap-3">
                                                 <div
-                                                    className="
+                                                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold ${getAvatarColor(
+                                                        c.displayName || c.customerName,
+                                                    )}`}
+                                                >
+                                                    {initials(c.displayName || c.customerName)}
+                                                </div>
+
+                                                <div>
+                                                    <p className="font-medium text-gray-800">
+                                                        {c.displayName}
+                                                    </p>
+                                                    <p className="text-sm text-gray-500">ID: #{c.id}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+
+
+                                        {/* Type */}
+                                        <td className="px-4 py-3">{c.customerType || "—"}</td>
+
+                                        {/* Currency */}
+                                        <td className="px-4 py-3">{c.currency || "—"}</td>
+
+                                        {/* Email */}
+                                        <td className="px-4 py-3">{c.email || "—"}</td>
+
+                                        {/* Mobile */}
+                                        <td className="px-4 py-3">
+                                            {c.mobileCode || "+91"} {c.mobile || "—"}
+                                        </td>
+
+                                        {/* PAN */}
+                                        <td className="px-4 py-3">{c.pan || "—"}</td>
+
+                                        {/* Receivables */}
+                                        <td className="px-4 py-3">{c.receivable || "—"}</td>
+
+                                        {/* UnUsed credits */}
+                                        <td className="px-4 py-3">{c.unusedCredits || "—"}</td>
+
+                                        {/* Status */}
+                                        <td className="px-5 py-3 font-semibold">
+                                            <span
+                                                className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[c.status]}`}
+                                            >
+                                                {c.status || "—"}
+                                            </span>
+                                        </td>
+
+
+                                        {/* Actions */}
+                                        <td className="relative overflow-visible px-4 py-3">
+                                            <div className="flex justify-end">
+                                                <div className="relative group inline-block">
+                                                    <button className="p-1 rounded-full bg-blue-500 text-white ">
+                                                        <ChevronDown size={16} />
+                                                    </button>
+
+                                                    <div
+                                                        className="
                                 absolute
                                 right-0
                                 top-full
@@ -222,28 +224,28 @@ export default function CustomerTable() {
                                 group-hover:visible
                                 transition-all
                               "
-                                                >
-                                                    <div className="w-32 rounded-md bg-blue-500 shadow-lg ">
-                                                        <button
-                                                            onClick={(e) => {
-                                                                e.stopPropagation(); // Prevent row click
-                                                                setShowEdit(true);
-                                                                dispatch(setSelectedCustomer(c));
-                                                                navigate(`/customers/edit/${c.id}`);
-                                                            }}
-                                                            className="flex w-full items-center gap-2 px-4 py-2 text-white hover:bg-blue-600 rounded-md"
-                                                        >
-                                                            <Edit size={16} />
-                                                            Edit
-                                                        </button>
+                                                    >
+                                                        <div className="w-32 rounded-md bg-blue-500 shadow-lg ">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation(); // Prevent row click
+                                                                    setShowEdit(true);
+                                                                    dispatch(setSelectedCustomer(c));
+                                                                    navigate(`/customers/edit/${c.id}`);
+                                                                }}
+                                                                className="flex w-full items-center gap-2 px-4 py-2 text-white hover:bg-blue-600 rounded-md"
+                                                            >
+                                                                <Edit size={16} />
+                                                                Edit
+                                                            </button>
+                                                        </div>
                                                     </div>
                                                 </div>
-                                            </div>
 
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
                         ) : (
                             <tr>
                                 <td colSpan="7" className="text-center py-6 text-gray-500">

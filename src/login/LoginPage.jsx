@@ -11,16 +11,20 @@ import {
     Bell,
     Settings,
 } from "lucide-react";
+
 import toast from "react-hot-toast";
+import AppLoader from "../common/loader/AppLoader";
 
 const LoginPage = () => {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [form, setForm] = useState({ email: "", password: "" });
     const [selectedFile, setSelectedFile] = useState(null);
     const [isCreateAccount, setIsCreateAccount] = useState(false);
-    const dispatch = useDispatch();
-    const navigate = useNavigate();
+    const [signingIn, setSigningIn] = useState(false);
 
     const { user, loading, error, isAuthenticated } = useSelector(
         (state) => state.auth,
@@ -53,6 +57,8 @@ const LoginPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
 
+        setSigningIn(true);
+
         try {
             await dispatch(
                 loginUser({
@@ -63,13 +69,15 @@ const LoginPage = () => {
 
             toast.success("Login successful");
         } catch (err) {
+            setSigningIn(false);
             toast.error(err || "Login failed");
         }
     };
 
+
     useEffect(() => {
         if (isAuthenticated) {
-            navigate("/home");
+            navigate("/home", { replace: true });
         }
     }, [isAuthenticated, navigate]);
 
@@ -77,41 +85,12 @@ const LoginPage = () => {
         document.getElementById("logo-upload").click();
     };
 
+
+    if (signingIn) {
+        return <AppLoader text="Signing you in..." />;
+    }
+
     return (
-        // <div className="min-h-screen flex items-center justify-center">
-        //   <form
-        //     onSubmit={handleSubmit}
-        //     className="w-96 p-6 border rounded-lg shadow"
-        //   >
-        //     <h2 className="text-2xl font-bold mb-4">Login</h2>
-
-        //     <input
-        //       type="email"
-        //       placeholder="Email"
-        //       className="w-full border p-2 mb-3"
-        //       value={email}
-        //       onChange={(e) => setEmail(e.target.value)}
-        //     />
-
-        //     <input
-        //       type="password"
-        //       placeholder="Password"
-        //       className="w-full border p-2 mb-3"
-        //       value={password}
-        //       onChange={(e) => setPassword(e.target.value)}
-        //     />
-
-        //     {error && <p className="text-red-500 mb-3">{error}</p>}
-
-        //     <button
-        //       type="submit"
-        //       disabled={loading}
-        //       className="w-full bg-black text-white p-2 rounded"
-        //     >
-        //       {loading ? "Logging in..." : "Login"}
-        //     </button>
-        //   </form>
-        // </div>
 
         <div
             className="relative min-h-screen bg-cover bg-center bg-no-repeat"
@@ -161,6 +140,14 @@ const LoginPage = () => {
 
                         <button className="text-white hover:text-gray-300">
                             <Settings className="w-[18px] h-[18px]" />
+                        </button>
+
+                        <button
+                            type="submit"
+                            disabled={signingIn}
+                            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-colors disabled:opacity-60"
+                        >
+                            {signingIn ? "Signing in..." : "Login"}
                         </button>
                     </div>
                 </div>

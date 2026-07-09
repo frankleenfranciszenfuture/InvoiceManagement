@@ -12,6 +12,7 @@ import {
 
 
 import {
+    loading,
     resetCustomerForm,
     resetDirty,
 } from "../../slices/customers/customerSlices";
@@ -31,6 +32,8 @@ import {
 
 
 import UnsavedChangesDialog from "../../common/bars/UnsavedChangesDialog";
+import InvoiceSkeleton from "../../common/loader/InvoiceSkeleton ";
+
 
 
 export default function AppLayout() {
@@ -57,6 +60,14 @@ export default function AppLayout() {
 
     console.log("Redux User:", user);
 
+
+    if (loading) {
+        return (
+
+            <InvoiceSkeleton />
+        );
+    }
+
     return (
         <div className="h-screen overflow-hidden bg-gray-50 flex">
             <Sidebar />
@@ -71,6 +82,7 @@ export default function AppLayout() {
                         {" "}
                         {/* ⬅ was just <div>, give it h-full so children can use h-full */}
                         <Outlet />
+
                     </div>
                 </main>
             </div>
