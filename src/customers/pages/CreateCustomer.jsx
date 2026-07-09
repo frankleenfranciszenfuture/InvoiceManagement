@@ -400,7 +400,7 @@ export default function CreateCustomer() {
 
             dispatch(resetDirty());
             dispatch(resetSelectedCustomer());
-
+            navigate("/customers");
             toast.success("Customer created successfully!");
 
             await dispatch(

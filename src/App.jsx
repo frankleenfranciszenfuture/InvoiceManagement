@@ -13,6 +13,7 @@ import CreateCustomer from "./customers/pages/CreateCustomer";
 import EditCustomer from "./customers/pages/EditCustomer";
 import ItemsDashboard from "./itemMasters/pages/ItemsDashboard";
 import ItemCreate from "./itemMasters/pages/ItemCreate";
+import CustomerOverViewDashboard from "./customers/OverviewCard/CustomerOverViewDashboard";
 
 export default function App() {
   return (
@@ -39,7 +40,8 @@ export default function App() {
           <Route path="/customers/table" element={<CustomerTable />} />
           <Route path="/customers/new" element={<CreateCustomer />} />
 
-
+          {/* Custoemr OverviewCard */}
+          <Route path="/customers/view/:id" element={<CustomerOverViewDashboard />} />
           <Route path="/customers/edit/:id" element={<EditCustomer />} />
 
 

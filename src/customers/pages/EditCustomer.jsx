@@ -26,7 +26,7 @@ import {
     setActiveTab,
     toggleEnablePortal,
     setAddressField,
-    copyBillingToShipping,
+    copySelectedBillingToShipping,
     setCurrency,
     setErrors,
     setSelectedCustomer,
@@ -111,7 +111,7 @@ const AddressColumn = ({
                 {showCopyLink && (
                     <button
                         type="button"
-                        onClick={() => dispatch(copyBillingToShipping())}
+                        onClick={() => dispatch(copySelectedBillingToShipping())}
                         className="text-blue-600 hover:underline text-sm"
                     >
                         Copy billing address
@@ -388,6 +388,7 @@ export default function EditCustomer() {
         try {
             await dispatch(saveCustomer()).unwrap();
 
+            navigate("/customers")
             toast.success("Customer updated successfully!");
 
             await dispatch(

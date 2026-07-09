@@ -62,48 +62,25 @@ const emptyCustomer = {
   twitter: "",
   skype: "",
   facebook: "",
+
   billingAddress: { ...emptyAddress },
   shippingAddress: { ...emptyAddress },
+
   contactPersons: [],
   status: "",
 };
 
 const initialState = {
   // Create Form
-  customerForm: {
-    customerType: "Business",
-    salutation: "",
-    firstName: "",
-    lastName: "",
-    companyName: "",
-    displayName: "",
-    currency: "",
-    email: "",
-    workPhoneCode: "+91",
-    workPhone: "",
-    mobileCode: "+91",
-    mobile: "",
-    customerLanguage: "",
-    pan: "",
-    paymentTerms: "Due on Receipt",
-    enablePortal: false,
-    websiteUrl: "",
-    department: "",
-    designation: "",
-    twitter: "",
-    skype: "",
-    facebook: "",
+  customerForm: structuredClone(emptyCustomer),
 
-    billingAddress: { ...emptyAddress },
-    shippingAddress: { ...emptyAddress },
+  contactForm: structuredClone(emptyContactPerson),
 
-    contactPersons: [],
-    status: "",
-  },
+  selectedCustomer: structuredClone(emptyCustomer),
 
   // Edit/View
   selectedCustomer: null,
-  selectedCustomer: structuredClone(emptyCustomer),
+
   // UI
 
   activeTab: "OtherDetails",
@@ -198,16 +175,27 @@ const customerSlice = createSlice({
       state.isDirty = true;
     },
 
-    copyBillingToShipping(state) {
-      const { id, ...billingWithoutId } =
-        state.selectedCustomer.billingAddress || {};
+    copySelectedBillingToShipping(state) {
+      if (!state.selectedCustomer?.billingAddress) return;
+
+      const { id, ...billing } = state.selectedCustomer.billingAddress;
 
       state.selectedCustomer.shippingAddress = {
-        ...billingWithoutId,
+        ...billing,
       };
+
       state.isDirty = true;
     },
 
+    copyBillingToShipping(state) {
+      const { id, ...billing } = state.customerForm.billingAddress || {};
+
+      state.customerForm.shippingAddress = {
+        ...billing,
+      };
+
+      state.isDirty = true;
+    },
     setActiveTab(state, action) {
       state.activeTab = action.payload;
     },
@@ -461,6 +449,7 @@ export const {
   toggleEnablePortal,
   setAddressField,
   copyBillingToShipping,
+  copySelectedBillingToShipping,
   resetForm,
   setCurrency,
 
@@ -528,8 +517,8 @@ export const validateCustomerForm = (customer) => {
 
   if (!customer.workPhone?.trim()) errors.workPhone = "Please enter work phone";
   if (!customer.mobile?.trim()) errors.mobile = "Please enter mobile number";
-  if (!customer.customerLanguage)
-    errors.customerLanguage = "Please select language";
+  // if (!customer.customerLanguage)
+  //   errors.customerLanguage = "Please select language";
 
   return errors;
 };

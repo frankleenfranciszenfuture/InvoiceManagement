@@ -33,6 +33,7 @@ import {
 
 import UnsavedChangesDialog from "../../common/bars/UnsavedChangesDialog";
 import InvoiceSkeleton from "../../common/loader/InvoiceSkeleton ";
+import Modal from "../../common/Models/Modal";
 
 
 
@@ -85,6 +86,7 @@ export default function AppLayout() {
 
                     </div>
                 </main>
+                <Modal />
             </div>
 
             <UnsavedChangesDialog
