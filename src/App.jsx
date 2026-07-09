@@ -11,9 +11,11 @@ import ProtectedRoute from "./roots/ProtectedRoute";
 import CustomerTable from "./customers/pages/CustomerTable";
 import CreateCustomer from "./customers/pages/CreateCustomer";
 import EditCustomer from "./customers/pages/EditCustomer";
-import ItemsDashboard from "./itemMasters/pages/ItemsDashboard";
-import ItemCreate from "./itemMasters/pages/ItemCreate";
 import CustomerOverViewDashboard from "./customers/OverviewCard/CustomerOverViewDashboard";
+import ItemMasterDashboard from "./itemMasters/pages/itemMasterDashboard";
+import ItemMasterCreate from "./itemMasters/pages/ItemMasterCreate";
+
+
 
 export default function App() {
   return (
@@ -46,14 +48,31 @@ export default function App() {
 
 
           {/* Items */}
-          <Route path="/items" element={<ItemsDashboard />} />
-          <Route path="/items/new" element={<ItemCreate />} />
+          <Route path="/items" element={<ItemMasterDashboard />} />
+          <Route path="/items/new" element={<ItemMasterCreate />} />
 
 
         </Route>
       </Routes>
 
-      <Toaster />
+      <Toaster
+        position="top-center"
+        toastOptions={{
+          duration: 3000,
+          success: {
+            style: {
+              background: "#16a34a",
+              color: "#fff",
+            },
+          },
+          error: {
+            style: {
+              background: "#dc2626",
+              color: "#fff",
+            },
+          },
+        }}
+      />
     </BrowserRouter>
   )
 }

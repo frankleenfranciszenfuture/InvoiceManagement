@@ -15,16 +15,16 @@ export default function CustomerBottomActionBar({ onSave, onCancel, onSubmit }) 
 
                 <button
                     onClick={onSave}
-                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-800"
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-800"
                 >
-                    Save Draft
+                    Save
                 </button>
 
                 <button
                     onClick={onSubmit}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                    className="px-4 py-2 bg-gray-700 text-white rounded-md hover:bg-gray-700"
                 >
-                    Submit
+                    Save as Draft
                 </button>
             </div>
         </div>

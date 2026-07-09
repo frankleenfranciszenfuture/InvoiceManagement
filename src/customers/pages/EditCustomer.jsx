@@ -377,19 +377,29 @@ export default function EditCustomer() {
     };
 
 
-    const handleSaveEdit = async () => {
-        const selectedCustomer = store.getState().customer.selectedCustomer;
-
+    const handleUpdate = async (status) => {
         const errors = validateCustomerForm(selectedCustomer);
         dispatch(setErrors(errors));
 
         if (Object.keys(errors).length > 0) return;
 
         try {
-            await dispatch(saveCustomer()).unwrap();
+            const updatedCustomer = await dispatch(
+                editCustomer({
+                    ...selectedCustomer,
+                    status,
+                })
+            ).unwrap();
 
-            navigate("/customers")
-            toast.success("Customer updated successfully!");
+            dispatch(resetDirty());
+            dispatch(resetSelectedCustomer());
+            dispatch(closeModal());
+
+            toast.success(
+                status === "DRAFT"
+                    ? "Customer draft updated successfully!"
+                    : "Customer updated successfully!"
+            );
 
             await dispatch(
                 loadCustomers({
@@ -398,13 +408,13 @@ export default function EditCustomer() {
                     search: "",
                     sortBy: "displayName",
                     direction: "asc",
+                    status: updatedCustomer.status,
                 })
             );
 
-
-            dispatch(closeModal());
-        } catch (err) {
-            toast.error(err?.message || err || "Failed to update customer");
+            navigate(`/customers?status=${updatedCustomer.status}`);
+        } catch (error) {
+            toast.error(error?.message || "Failed to update customer");
         }
     };
 
@@ -993,9 +1003,10 @@ export default function EditCustomer() {
                     {/* Action buttons */}
                     <div className="flex-1 flex flex-col overflow-hidden relative h-full  gap-3 mt-8 pb-10">
                         <CustomerBottomActionBar
-                            onSave={handleSaveEdit}
+                            onSave={() => handleUpdate("ACTIVE")}
+                            onSubmit={() => handleUpdate("DRAFT")}
                             onCancel={handleCancel}
-                            onSubmit={handleSubmit}
+
                         />
                     </div>
                 </div>

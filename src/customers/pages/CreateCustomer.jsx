@@ -382,7 +382,7 @@ export default function CreateCustomer() {
         dispatch(resetSelectedCustomer());
     }, [dispatch]);
 
-    const handleSave = async () => {
+    const handleSave = async (status) => {
         const errors = validateCustomerForm(customer);
         dispatch(setErrors(errors));
 
@@ -390,18 +390,18 @@ export default function CreateCustomer() {
             return;
         }
 
-        const payload = {
-            ...customer,
-            status: customer.status ? customer.status : null, // avoid sending ""
-        };
 
         try {
-            await dispatch(addCustomer(payload)).unwrap();
+            const savedCustomer = await dispatch(
+                addCustomer({
+                    ...customer,
+                    status: "ACTIVE",
+                })
+            ).unwrap();
 
             dispatch(resetDirty());
             dispatch(resetSelectedCustomer());
-            navigate("/customers");
-            toast.success("Customer created successfully!");
+            dispatch(closeModal());
 
             await dispatch(
                 loadCustomers({
@@ -410,13 +410,51 @@ export default function CreateCustomer() {
                     search: "",
                     sortBy: "displayName",
                     direction: "asc",
+                    status: savedCustomer.status,
                 })
             );
 
-
-            dispatch(closeModal());
+            navigate(`/customers?status=${savedCustomer.status}`);
         } catch (error) {
             toast.error(error?.message || error || "Failed to create customer");
+        }
+    };
+
+
+    const handleSaveDraft = async (status) => {
+        const errors = validateCustomerForm(customer);
+        dispatch(setErrors(errors));
+
+        if (Object.keys(errors).length > 0) return;
+
+        try {
+            const savedCustomer = await dispatch(
+                addCustomer({
+                    ...customer,
+                    status: "DRAFT",
+                })
+            ).unwrap();
+
+            dispatch(resetDirty());
+            dispatch(resetSelectedCustomer());
+            dispatch(closeModal());
+
+            toast.success("Customer draft saved successfully!");
+
+            await dispatch(
+                loadCustomers({
+                    page: 0,
+                    size: 5,
+                    search: "",
+                    sortBy: "displayName",
+                    direction: "asc",
+                    status: savedCustomer.status,
+                })
+            );
+
+            navigate(`/customers?status=${savedCustomer.status}`);
+        } catch (error) {
+            toast.error(error?.message || error || "Failed to save draft");
         }
     };
 
@@ -457,24 +495,6 @@ export default function CreateCustomer() {
             toast.success("Customer deleted successfully!");
         } catch (error) {
             toast.error(error || "Delete failed");
-        }
-    };
-
-    const handleSubmit = async () => {
-        try {
-            await dispatch(
-                loadCustomers({
-                    page: 0,
-                    size: 5,
-                    search: "",
-                    sortBy: "displayName",
-                    direction: "asc",
-                }),
-            ).unwrap();
-
-            console.log("Customers loaded successfully");
-        } catch (error) {
-            console.error("Failed to load customers:", error);
         }
     };
 
@@ -1030,9 +1050,9 @@ export default function CreateCustomer() {
                     {/* Action buttons */}
                     <div className="flex-1 flex flex-col overflow-hidden relative h-full  gap-3 mt-8 pb-10">
                         <CustomerBottomActionBar
-                            onSave={handleSave}
+                            onSave={() => handleSave("ACTIVE")}
                             onCancel={handleCancel}
-                            onSubmit={handleSubmit}
+                            onSubmit={() => handleSaveDraft("DRAFT")}
                         />
                     </div>
                 </div>

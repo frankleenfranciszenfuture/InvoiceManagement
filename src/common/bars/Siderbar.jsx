@@ -44,6 +44,7 @@ const NAV = [
         icon: Package,
         to: "/items",
         addTo: "/items/new",
+        queryKey: "status",
     },
     {
         label: "Payments",

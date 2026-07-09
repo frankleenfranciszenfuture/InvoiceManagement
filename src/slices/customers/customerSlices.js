@@ -79,7 +79,6 @@ const initialState = {
   selectedCustomer: structuredClone(emptyCustomer),
 
   // Edit/View
-  selectedCustomer: null,
 
   // UI
 
@@ -90,7 +89,7 @@ const initialState = {
   // Table
   customers: [],
   page: 0,
-  pageSize: 5,
+  pageSize: 10,
   totalElements: 0,
   totalPages: 0,
 
@@ -407,11 +406,39 @@ const customerSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      .addCase(saveCustomer.fulfilled, (state, action) => {
-        console.log("saveCustomer payload:", action.payload);
 
+      .addCase(addCustomer.fulfilled, (state, action) => {
+        state.customers.unshift(action.payload);
         state.selectedCustomer = action.payload;
+      })
 
+      .addCase(saveCustomer.fulfilled, (state, action) => {
+        const customer = action.payload;
+
+        const index = state.customers.findIndex((c) => c.id === customer.id);
+
+        if (index !== -1) {
+          state.customers[index] = customer;
+        } else {
+          state.customers.unshift(customer);
+        }
+      })
+
+      .addCase(editCustomer.fulfilled, (state, action) => {
+        const customer = action.payload;
+
+        // Update selected customer
+        state.selectedCustomer = customer;
+
+        // Update customer in list
+        const index = state.customers.findIndex((c) => c.id === customer.id);
+
+        if (index !== -1) {
+          state.customers[index] = customer;
+        }
+      })
+
+      .addCase(removeCustomer.fulfilled, (state, action) => {
         const index = state.customers.findIndex(
           (c) => c.id === action.payload.id,
         );
@@ -419,20 +446,6 @@ const customerSlice = createSlice({
         if (index !== -1) {
           state.customers[index] = action.payload;
         }
-      })
-
-      .addCase(editCustomer.fulfilled, (state, action) => {
-        const customer = action.payload; // was action.payload.data
-        const index = state.customers.findIndex((c) => c.id === customer.id);
-        if (index !== -1) {
-          state.customers[index] = customer;
-        }
-      })
-
-      .addCase(removeCustomer.fulfilled, (state, action) => {
-        state.customers = state.customers.filter(
-          (customer) => customer.id !== action.payload,
-        );
       });
   },
 });
@@ -515,7 +528,7 @@ export const validateCustomerForm = (customer) => {
     errors.email = "Please enter a valid email";
   }
 
-  if (!customer.workPhone?.trim()) errors.workPhone = "Please enter work phone";
+  // if (!customer.workPhone?.trim()) errors.workPhone = "Please enter work phone";
   if (!customer.mobile?.trim()) errors.mobile = "Please enter mobile number";
   // if (!customer.customerLanguage)
   //   errors.customerLanguage = "Please select language";

@@ -25,9 +25,9 @@ export const addCustomer = createAsyncThunk(
   async (customer, { rejectWithValue }) => {
     try {
       const response = await createCustomer(customer);
-      return response.data; // unwrap envelope → the actual customer object
+      return response; // ✅ not response.data
     } catch (error) {
-      return rejectWithValue(error.message);
+      return rejectWithValue(error.response?.data || error.message);
     }
   },
 );
@@ -75,10 +75,10 @@ export const saveCustomerAddress = createAsyncThunk(
 
 export const editCustomer = createAsyncThunk(
   "customers/edit",
-  async ({ id, data }, { rejectWithValue }) => {
+  async (customer, { rejectWithValue }) => {
     try {
-      const response = await updateCustomer(id, data);
-      return response; // unwrapped customer object
+      const response = await updateCustomer(customer.id, customer);
+      return response;
     } catch (error) {
       return rejectWithValue(error.response?.data || error.message);
     }

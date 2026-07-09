@@ -9,7 +9,7 @@ import { useSearchParams } from "react-router-dom";
 
 import { loadCustomers } from "../../slices/customers/thunks/customerThunks";
 
-import { setCurrentPage, setStatus, } from "../../slices/customers/customerSlices"
+import { setCurrentPage, setStatus, setSearchQuery } from "../../slices/customers/customerSlices"
 
 
 import {
@@ -46,6 +46,9 @@ export default function CustomerDashboard() {
         pageSize,
         totalPages,
         totalElements,
+        searchQuery,
+        sortBy,
+        direction,
     } = useSelector((state) => state.customer);
 
     console.log("Customer State:", useSelector((state) => state.customer));
@@ -62,16 +65,15 @@ export default function CustomerDashboard() {
 
 
     useEffect(() => {
-
         dispatch(loadCustomers({
-            page: 0,
-            size: 10,
-            search: "",
-            sortBy: "displayName",
-            direction: "asc"
+            page,
+            size: pageSize,
+            search: searchQuery,
+            sortBy,
+            direction,
+            status,
         }));
-
-    }, [dispatch]);
+    }, [dispatch, page, pageSize, searchQuery, sortBy, direction, status]);
 
     if (loading) {
         return (
