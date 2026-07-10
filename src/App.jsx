@@ -5,15 +5,25 @@ import "react-toastify/dist/ReactToastify.css";
 
 import LoginPage from "./login/LoginPage";
 import Dashboard from "./Dashboard/pages/Dashboard";
-import CustomerDashboard from "./customers/pages/CustomerDashboard";
+
 import AppLayout from "./Home/pages/AppLayout";
 import ProtectedRoute from "./roots/ProtectedRoute";
+
+// customers
+import CustomerDashboard from "./customers/pages/CustomerDashboard";
 import CustomerTable from "./customers/pages/CustomerTable";
 import CreateCustomer from "./customers/pages/CreateCustomer";
 import EditCustomer from "./customers/pages/EditCustomer";
 import CustomerOverViewDashboard from "./customers/OverviewCard/CustomerOverViewDashboard";
+
+// items
 import ItemMasterDashboard from "./itemMasters/pages/itemMasterDashboard";
 import ItemMasterCreate from "./itemMasters/pages/ItemMasterCreate";
+
+// invoices
+import InvoiceDashboard from "./invoices/pages/InvoiceDashboard";
+import CreateInvoice from "./invoices/pages/CreateInvoice";
+import InvoiceTable from "./invoices/pages/InvoiceTable";
 
 
 
@@ -46,6 +56,10 @@ export default function App() {
           <Route path="/customers/view/:id" element={<CustomerOverViewDashboard />} />
           <Route path="/customers/edit/:id" element={<EditCustomer />} />
 
+
+          {/* invoices */}
+          <Route path="/invoices" element={<InvoiceDashboard />} />
+          <Route path="/invoices/new" element={<InvoiceTable />} />
 
           {/* Items */}
           <Route path="/items" element={<ItemMasterDashboard />} />

@@ -18,6 +18,9 @@ const initialState = {
 
   // settingsMenuOpen
   settingsOpen: false,
+
+  //invoicenew
+  invoiceNewMenuOpen: false,
 };
 
 const uiSlice = createSlice({
@@ -58,8 +61,11 @@ const uiSlice = createSlice({
     closeQuickCreate: (state) => {
       state.quickCreateOpen = false;
     },
+
     toggleQuickCreate: (state) => {
+      console.log("Before:", state.quickCreateOpen);
       state.quickCreateOpen = !state.quickCreateOpen;
+      console.log("After:", state.quickCreateOpen);
     },
 
     // profile Menu
@@ -91,6 +97,14 @@ const uiSlice = createSlice({
     closeSettingsMenu: (state) => {
       state.settingsOpen = false;
     },
+
+    toggleInvoiceNewMenuOpen: (state) => {
+      state.invoiceNewMenuOpen = !state.invoiceNewMenuOpen;
+    },
+
+    closeInvoiceNewMenuOpen: (state) => {
+      state.invoiceNewMenuOpen = false;
+    },
   },
 });
 
@@ -120,5 +134,9 @@ export const {
 
   toggleSettings,
   closeSettingsMenu,
+
+  // invoicenew menu
+  toggleInvoiceNewMenuOpen,
+  closeInvoiceNewMenuOpen,
 } = uiSlice.actions;
 export default uiSlice.reducer;

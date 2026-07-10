@@ -46,18 +46,22 @@ const NAV = [
         addTo: "/items/new",
         queryKey: "status",
     },
-    {
-        label: "Payments",
-        icon: Wallet,
-        to: "/payments",
-        addTo: "/payments/new",
-    },
+
     {
         label: "Invoices",
         icon: FileText,
         to: "/invoices",
         addTo: "/invoices/new",
     },
+
+
+    {
+        label: "Payments",
+        icon: Wallet,
+        to: "/payments",
+        addTo: "/payments/new",
+    },
+
 ];
 
 

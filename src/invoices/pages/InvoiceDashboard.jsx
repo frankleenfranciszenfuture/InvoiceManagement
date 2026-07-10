@@ -1,16 +1,15 @@
-import React from "react";
+import React from 'react'
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import CustomerBottomActionBar from "../components/bars/CustomerBottomActionBar";
-import CustomerTable from "../../customers/pages/CustomerTable";
-import CustomerNavbar from "../components/bars/CustomerNavbar";
+import InvoiceBottomActionBar from "../components/bars/InvoiceBottomActionBar";
+import InvoiceTable from "../../invoices/pages/InvoiceTable";
+import InvoiceNavbar from '../components/bars/InvoiceNavbar';
 import { useSearchParams } from "react-router-dom";
 
-import { loadCustomers } from "../../slices/customers/thunks/customerThunks";
+import { loadInvoices } from "../../slices/invoices/thunks/invoiceThunks";
 
-import { setCurrentPage, setStatus, setSearchQuery } from "../../slices/customers/customerSlices"
-
+import { setCurrentPage, setInvoiceStatus, setSearchQuery } from "../../slices/invoices/invoiceSlice"
 
 import {
     Search,
@@ -30,78 +29,60 @@ import {
     Loader2,
 } from "lucide-react";
 
-import InvoiceSkeleton from "../../common/loader/InvoiceSkeleton ";
 
-export default function CustomerDashboard() {
+import InvoiceSkeleton from '../../common/loader/InvoiceSkeleton ';
+
+
+export default function InvoiceDashboard() {
 
     const dispatch = useDispatch();
     const [searchParams] = useSearchParams();
 
     const navigate = useNavigate();
 
+    const invoiceState = useSelector((state) => state.invoice);
+
     const {
-        customers,
+        invoices,
         loading,
         error,
         page,
         pageSize,
         totalPages,
         totalElements,
-        searchQuery,
-        sortBy,
-        direction,
-    } = useSelector((state) => state.customer);
+        invoiceStatus,
+    } = invoiceState;
 
-    console.log("Customer State:", useSelector((state) => state.customer));
+    console.log(invoiceState);
 
-    const { search } = useSelector((state) => state.customerView);
+    const { search } = useSelector((state) => state.invoiceView);
 
-    console.log("Customers Redux:", customers);
-    console.log("Customers Length:", customers?.length);
+    console.log("Customers Redux:", invoices);
+    console.log("Customers Length:", invoices?.length);
 
-    const status = searchParams.get("status") || "ALL";
-
-    const customerState = useSelector((state) => state.customer);
-    console.log("Customer State:", customerState);
+    const status = searchParams.get("invoiceStatus") || "ALL";
 
 
     useEffect(() => {
-        dispatch(loadCustomers({
-            page,
-            size: pageSize,
-            search: searchQuery,
-            sortBy,
-            direction,
-            status,
-        }));
-    }, [dispatch, page, pageSize, searchQuery, sortBy, direction, status]);
-
-    if (loading) {
-        return (
-            // <div className="flex flex-1 items-center justify-center bg-white">
-            //     <div className="flex flex-col items-center">
-            //         <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-            //         <p className="mt-4 text-sm font-medium text-gray-700">
-            //             Loading Customers...
-            //         </p>
-            //     </div>
-            // </div>
-
-            <InvoiceSkeleton />
+        dispatch(
+            loadInvoices({
+                page,
+                size: pageSize,
+                search,
+                invoiceStatus,
+            })
         );
-    }
-
+    }, [dispatch, page, pageSize, search, invoiceStatus]);
 
     return (
-
         <div className="flex h-screen bg-gray-50 font-sans text-[13px] overflow-hidden">
             {/* Form Container Wrapper allowing separate inner scrolling */}
             <div className="flex-1 min-h-0 bg-white overflow-y-auto">
                 <div className="px-2 py-5 max-w-30xl w-full ">
-                    <CustomerNavbar />
+                    <InvoiceNavbar />
                     <>
-                        {customers?.length > 0 ? (
-                            <CustomerTable />
+                        {invoices?.length > 0 ? (
+                            <InvoiceTable />
                         ) : (
                             <div className="min-h-full flex flex-col items-center justify-center gap-3 px-4">
                                 <div className="relative w-24 h-24 rounded-full bg-gray-100 flex items-center justify-center mb-1 flex-shrink-0 mt-30">
@@ -125,7 +106,7 @@ export default function CustomerDashboard() {
                                         className="flex items-center gap-2 bg-blue-600 text-white text-sm font-medium px-4 py-2 rounded-md hover:bg-blue-700 transition-colors whitespace-nowrap"
                                     >
                                         <Plus className="w-4 h-4" />
-                                        Create New Customer
+                                        Create New Invoice
                                     </button>
                                     <button className="flex items-center gap-2 bg-white text-gray-700 text-sm border border-gray-300 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors whitespace-nowrap">
                                         <Download className="w-4 h-4" />
