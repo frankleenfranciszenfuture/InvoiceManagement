@@ -22,8 +22,8 @@ import ItemMasterCreate from "./itemMasters/pages/ItemMasterCreate";
 
 // invoices
 import InvoiceDashboard from "./invoices/pages/InvoiceDashboard";
-import CreateInvoice from "./invoices/pages/CreateInvoice";
 import InvoiceTable from "./invoices/pages/InvoiceTable";
+import NewInvoiceFull from "./invoices/pages/createInvoice/NewInvoiceFull";
 
 
 
@@ -59,7 +59,7 @@ export default function App() {
 
           {/* invoices */}
           <Route path="/invoices" element={<InvoiceDashboard />} />
-          <Route path="/invoices/new" element={<InvoiceTable />} />
+          <Route path="/invoices/new" element={<NewInvoiceFull />} />
 
           {/* Items */}
           <Route path="/items" element={<ItemMasterDashboard />} />

@@ -139,21 +139,7 @@ export default function InvoiceNavbar({ title }) {
 
             {/* Right */}
             <div className="flex items-center gap-2">
-                {/* <div className="flex overflow-hidden rounded-md border border-blue-600 shadow-sm">
-                    <button className="flex items-center gap-1 bg-blue-600 px-2.5 py-1 text-xs font-medium text-white">
-                        <Plus size={12} />
-                        New
-                    </button>
-                    <Tooltip text="Quick Create" />
 
-                    <button className="border-l border-blue-500 bg-blue-600 px-2 text-white">
-                        <ChevronDown size={12} />
-                    </button>
-                </div>
-
-                <button className="rounded-md border border-gray-300 p-1">
-                    <MoreHorizontal size={14} />
-                </button> */}
 
                 <QuickCreateButtonInvoice />
             </div>

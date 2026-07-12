@@ -16,6 +16,8 @@ import {
   loadCustomerInvoices,
 } from "./thunks/invoiceThunks";
 
+import { loadCustomers } from "../../slices/customers/thunks/customerThunks";
+
 // ============================
 // Helpers
 // ============================
@@ -425,6 +427,34 @@ const invoiceSlice = createSlice({
       })
       .addCase(removeInvoice.rejected, (state, action) => {
         state.loading = false;
+        state.error = action.payload;
+      })
+
+      //
+
+      .addCase(loadCustomers.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(loadCustomers.fulfilled, (state, action) => {
+        console.log("Redux Customer Payload:", action.payload);
+
+        state.loading = false;
+
+        state.customers = action.payload.content || [];
+
+        state.page = action.payload.page;
+
+        state.pageSize = action.payload.size;
+
+        state.totalElements = action.payload.totalElements;
+
+        state.totalPages = action.payload.totalPages;
+      })
+
+      .addCase(loadCustomers.rejected, (state, action) => {
+        state.loading = false;
+
         state.error = action.payload;
       })
 
