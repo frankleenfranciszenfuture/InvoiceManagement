@@ -22,6 +22,9 @@ import { loadCustomers } from "../../slices/customers/thunks/customerThunks";
 //  itemMasters
 import { loadItemMasters } from "../../slices/itemMasters/thunks/itemMasterThunks";
 
+// SalesPerson
+import { loadSalesPerson } from "../../slices/salesPerson/thunks/salesPersonThunks";
+
 // ============================
 // Helpers
 // ============================
@@ -595,6 +598,23 @@ const invoiceSlice = createSlice({
         state.itemMasters = action.payload;
       })
       .addCase(loadItemMasters.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ==========================
+      // salesPersons
+      // ==========================
+
+      .addCase(loadSalesPerson.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loadSalesPerson.fulfilled, (state, action) => {
+        state.loading = false;
+        state.salesPersons = action.payload;
+      })
+      .addCase(loadSalesPerson.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

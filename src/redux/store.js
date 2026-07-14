@@ -15,6 +15,12 @@ import invoiceViewReducer from "../slices/invoices/invoiceViewSlice";
 import itemMasterReducer from "../slices/itemMasters/itemMasterSlice";
 import itemMasterViewReducer from "../slices/itemMasters/itemMasterViewSlice";
 
+//salesPerson
+import salesPersonReducer from "../slices/salesPerson/salesPersonSlice";
+
+// tax
+import taxMasterReducer from "../slices/invoices/tax/taxMasterSlice";
+
 import dashboardReducer from "../slices/dashboard/dashboardSlice";
 
 export const store = configureStore({
@@ -32,9 +38,15 @@ export const store = configureStore({
     invoice: invoiceReducer,
     invoiceView: invoiceViewReducer,
 
+    // taxMaster
+    taxMaster: taxMasterReducer,
+
     // itemMaster
     itemMaster: itemMasterReducer,
     itemMasterView: itemMasterViewReducer,
+
+    //salesPerson
+    salesPerson: salesPersonReducer,
 
     // dashboard
     dashboard: dashboardReducer,

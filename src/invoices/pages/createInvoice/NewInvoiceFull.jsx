@@ -7,24 +7,31 @@ import toast from "react-hot-toast";
 import { loadCustomers } from "../../../slices/customers/thunks/customerThunks";
 import { loadInvoiceNumber, } from "../../../slices/invoices/thunks/invoiceThunks"
 import { loadItemMasters } from "../../../slices/itemMasters/thunks/itemMasterThunks"
+import { loadTaxMasters, getTaxMasterByType } from "../../../slices/invoices/tax/thunks/taxMasterThunks";
+import { loadSalesPerson } from "../../../slices/salesPerson/thunks/salesPersonThunks";
+
 
 import {
     // customer related inside invoice
-
     toggleSimplifiedView,
     setCustomerSearch,
     setOpenCustomer,
     setCustomerId,
     setCustomerName,
+    setCustomerNotes,
+    //......................//
 
     // loadInvoice related
     setOrderNumber,
     setSubject,
+    //......................//
 
     //dateRelated
     setInvoiceDate,
     setDueDate,
     setTerms,
+    //......................//
+
 
     //itemMaster
     setItemSearch,
@@ -36,6 +43,22 @@ import {
     //ui
     setShowSaveMenu,
     toggleSaveMenu,
+    //totalBlock
+    selectSubTotal,
+    selectDiscountAmount,
+    selectTaxAmount,
+    selectGrandTotal,
+    //......................//
+
+    setField,
+    updateInvoiceField,
+
+
+    //salesPerson
+    setSalesPersonId,
+    setSalesPersonName,
+    setSalesPersonSearch,
+    setOpenSalesPerson,
 
 } from "../../../slices/invoices/invoiceSlice";
 
@@ -63,6 +86,9 @@ import {
     Grip,
     MoreHorizontal
 } from "lucide-react";
+import { TaxDropdown, TaxTypeSelector } from "../../components/Tax";
+import InvoiceAddPaymentCard from "../../components/bars/InvoiceAddPaymentCard";
+import BottomActionBarInvoice from "../../pages/createInvoice/BottomActionBarInvoice";
 
 export default function NewInvoiceFull() {
 
@@ -70,7 +96,6 @@ export default function NewInvoiceFull() {
 
     const EMPTY_ARRAY = [];
     const EMPTY_OBJECT = {};
-
 
     const customerDropdownRef = useRef(null);
 
@@ -107,6 +132,14 @@ export default function NewInvoiceFull() {
     );
 
     const invoiceNumber = useSelector((state) => state.invoice.invoiceNumber);
+
+    //taxMaster
+
+    const {
+        taxes,
+        selectedTax,
+        loading,
+    } = useSelector((state) => state.taxMaster);
 
 
     // itemMasters
@@ -150,11 +183,38 @@ export default function NewInvoiceFull() {
     }, [itemMasters, itemSearch]);
 
 
+    // salesPerson
+
+    const salesPersonDropdownRef = useRef(null);
+
+    const salesPerson = useSelector(
+        (state) => state.invoice.salesPersons ?? []
+    );
+
+    const salesPersonSearch = useSelector(
+        (state) => state.invoice.salesPersonSearch ?? ""
+    );
+
+    const openSalesPerson = useSelector(
+        (state) => state.invoice?.openSalesPerson ?? ""
+    );
+
+
+    const filteredSalesPerson = useMemo(() => {
+        return salesPerson.filter((salesPerson) =>
+            salesPerson.salesPersonName
+                ?.toLowerCase()
+                .includes(salesPersonSearch.toLowerCase())
+        );
+    }, [salesPerson, salesPersonSearch]);
+
     // useEffect for dispatch values
     useEffect(() => {
         dispatch(loadCustomers());
         dispatch(loadInvoiceNumber());
         dispatch(loadItemMasters());
+        dispatch(loadTaxMasters());
+        dispatch(loadSalesPerson());
     }, [dispatch]);
 
     //useEffect for handleClick enable/disable
@@ -168,12 +228,12 @@ export default function NewInvoiceFull() {
                 dispatch(setOpenCustomer(false));
             }
 
-            // if (
-            //     salesPersonDropdownRef.current &&
-            //     !salesPersonDropdownRef.current.contains(e.target)
-            // ) {
-            //     dispatch(setOpenSalesPerson(false));
-            // }
+            if (
+                salesPersonDropdownRef.current &&
+                !salesPersonDropdownRef.current.contains(e.target)
+            ) {
+                dispatch(setOpenSalesPerson(false));
+            }
 
             if (
                 itemDropdownRef.current &&
@@ -193,11 +253,35 @@ export default function NewInvoiceFull() {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [dispatch]);
 
+    //calculations
+    //safeNumber , safeText
+    const safeText = (v) => (v ?? "").toString().toLowerCase();
+    const safeNumber = (v) => Number(v ?? 0);
+
+    //fmt
+    const fmt = (n) => parseFloat(n || 0).toFixed(2);
 
 
+    //total block calc
+    const subtotal = useSelector(selectSubTotal);
+    const discount = useSelector(selectDiscountAmount);
+    const tax = useSelector(selectTaxAmount);
+    const total = useSelector(selectGrandTotal);
+
+
+
+    //paymentCard
+    const [showSummary, setShowSummary] = useState(false);
+    const [showTerms, setShowTerms] = useState(false);
+    const [showGateway, setShowGateway] = useState(false);
+    const [receivedPayment, setReceivedPayment] = useState(false);
 
     // handle function
 
+    //handleChange
+    const handleChange = (field) => (e) => {
+        dispatch(setField({ field, value: e.target.value }));
+    };
 
     //TermsChanges
     const handleTermsChange = (term) => {
@@ -214,13 +298,112 @@ export default function NewInvoiceFull() {
         dispatch(setDueDate(invoiceDate.toISOString().split("T")[0]));
     };
 
-    //calculations
-    //safeNumber , safeText
-    const safeText = (v) => (v ?? "").toString().toLowerCase();
-    const safeNumber = (v) => Number(v ?? 0);
 
-    //fmt
-    const fmt = (n) => parseFloat(n || 0).toFixed(2);
+    //handleSave
+
+    const handleSave = async () => {
+        console.log("Save Invoice");
+    };
+
+    //handleSaveAndNew
+    const handleSaveAndNew = async () => {
+        console.log("Save & New Invoice");
+    };
+
+    //handleSaveAndSend
+    const handleSaveAndSend = async () => {
+        console.log("Save & Send Invoice");
+    };
+
+    //handleSaveAsDraft
+    const handleSaveAsDraft = async () => {
+        console.log("Save Invoice as Draft");
+    };
+
+    //handleUpdate
+    const handleUpdate = async () => {
+        console.log("Update Invoice");
+    };
+
+    //handlePreview
+    const handlePreview = () => {
+        console.log("Preview Invoice");
+    };
+
+    //handlePrint
+    const handlePrint = () => {
+        window.print();
+    };
+
+    //handleDownloadPdf
+    const handleDownloadPdf = async () => {
+        console.log("Download Invoice PDF");
+    };
+
+    //handleEmail
+    const handleEmail = async () => {
+        console.log("Email Invoice");
+    };
+
+    //handleShare
+    const handleShare = async () => {
+        console.log("Share Invoice");
+    };
+
+    //handleDuplicate
+    const handleDuplicate = () => {
+        console.log("Duplicate Invoice");
+    };
+
+    //handleDelete
+    const handleDelete = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to delete this invoice?"
+        );
+
+        if (!confirmed) return;
+
+        console.log("Delete Invoice");
+    };
+
+    const handleMarkAsSent = async () => {
+        console.log("Mark Invoice as Sent");
+    };
+
+    const handleMarkAsPaid = async () => {
+        console.log("Mark Invoice as Paid");
+    };
+
+    const handleVoid = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to void this invoice?"
+        );
+
+        if (!confirmed) return;
+
+        console.log("Void Invoice");
+    };
+
+    const handleCancelInvoice = async () => {
+        const confirmed = window.confirm(
+            "Are you sure you want to cancel this invoice?"
+        );
+
+        if (!confirmed) return;
+
+        console.log("Cancel Invoice");
+    };
+
+    const handleCancel = () => {
+        navigate("/invoice");
+    };
+
+
+
+
+
+
+
 
     return (
         <div className="flex h-full bg-gray-50 font-sans text-[13px] overflow-hidden">
@@ -386,7 +569,7 @@ export default function NewInvoiceFull() {
                     {/* ...... */}
 
                     {/* Invoice # and Date row */}
-                    <div className="px-2 max-w-[1100px]">
+                    <div className="px-2 max-w-[1100px] mt-6">
                         {/* Invoice Number */}
                         <div className="flex items-center mb-4">
                             <label className="w-44 text-sm font-medium text-red-500 shrink-0">
@@ -422,6 +605,209 @@ export default function NewInvoiceFull() {
                                     className="w-full border border-gray-300 rounded px-3 py-2 pr-8"
                                 />
                             </div>
+                        </div>
+
+
+                        {/*  Reference Number */}
+
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium shrink-0">
+                                Reference Number
+                            </label>
+
+                            <div className="w-[330px]">
+                                <input
+                                    value={invoice.referenceNumber}
+                                    onChange={(e) =>
+                                        dispatch(setReferenceNumber(e.target.value))
+                                    }
+                                    className="w-full border border-gray-300 rounded px-3 py-2"
+                                />
+                            </div>
+                        </div>
+
+
+
+                        {/* Currency */}
+
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium shrink-0">
+                                Currency
+                            </label>
+
+                            <select
+                                value={invoice.currency}
+                                onChange={(e) =>
+                                    dispatch(setCurrency(e.target.value))
+                                }
+                                className="w-[330px] border border-gray-300 rounded px-3 py-2"
+                            >
+                                <option value="INR">INR</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+
+                        {invoice.currency !== "INR" && (
+
+                            <div className="flex items-center mb-4">
+
+                                <label className="w-44 text-sm font-medium">
+                                    Exchange Rate
+                                </label>
+
+                                <input
+                                    type="number"
+                                    value={invoice.exchangeRate}
+                                    onChange={(e) =>
+                                        dispatch(setExchangeRate(Number(e.target.value)))
+                                    }
+                                    className="w-[330px] border border-gray-300 rounded px-3 py-2"
+                                />
+
+                            </div>
+
+                        )}
+
+
+                        {/* Sales person */}
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium text-red-500 shrink-0 flex items-center">
+                                Sales Person<span>*</span>
+                                <span className="ml-1 inline-block w-2 h-2 bg-blue-500 rounded-full" />
+                            </label>
+
+                            <div className="flex gap-2 w-[550px]">
+                                <div ref={salesPersonDropdownRef} className="relative flex-1">
+                                    <input
+                                        type="text"
+                                        value={salesPersonSearch}
+                                        placeholder="Select or add a salesperson"
+                                        onClick={() =>
+                                            dispatch(setOpenSalesPerson(!openSalesPerson))
+                                        }
+                                        onChange={(e) =>
+                                            dispatch(setSalesPersonSearch(e.target.value))
+                                        }
+                                        className="w-full border border-blue-500 rounded px-3 py-2 text-sm"
+                                    />
+
+                                    <ChevronDown
+                                        size={14}
+                                        className="absolute right-3 top-3 text-gray-400"
+                                    />
+
+                                    {openSalesPerson && (
+                                        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-lg shadow-lg z-50">
+                                            {/* Search Box */}
+                                            <div className="p-2 border border-gray-200">
+                                                <div className="relative">
+                                                    <Search
+                                                        size={16}
+                                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                    />
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search"
+                                                        value={salesPersonSearch}
+                                                        onChange={(e) =>
+                                                            dispatch(setSalesPersonSearch(e.target.value))
+                                                        }
+                                                        className="w-full border border-blue-300 rounded pl-10 pr-3 py-2 text-sm  cursor-pointer"
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* Customer List */}
+                                            <div className="max-h-60 overflow-y-auto">
+                                                {filteredSalesPerson.map((salesPerson) => (
+                                                    <button
+                                                        key={salesPerson.id}
+                                                        onClick={() => {
+                                                            dispatch(setSalesPersonName(salesPerson.salesPersonName));
+                                                            dispatch(setSalesPersonSearch(salesPerson.salesPersonName));
+                                                            dispatch(setOpenSalesPerson(false));
+
+                                                            dispatch(setCustomerId(salesPerson.id));
+                                                        }}
+                                                        className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
+                                                    >
+                                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-medium">
+                                                            {salesPerson.salesPersonName?.charAt(0)}
+                                                        </div>
+
+                                                        <div>
+                                                            <p>{salesPerson.salesPersonName}</p>
+
+                                                            <p className="text-xs opacity-80">
+                                                                {salesPerson.email}
+                                                            </p>
+                                                        </div>
+                                                    </button>
+                                                ))}
+                                            </div>
+
+                                            {/* Footer */}
+                                            <div className="flex items-center gap-2 flex-1 border border-gray-200  hover:bg-blue-100  cursor-pointer">
+                                                <div className="ml-3 mt-2 mb-2 px-3 py-2 h-7 rounded-full bg-blue-500 border border-gray-400 flex items-center justify-center flex-shrink-0">
+                                                    <Plus
+                                                        size={8}
+                                                        className="w-2 h-3 text-gray-100 font-bold"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <h2 className="text-sm font-medium text-blue-800 ">
+                                                        New Customer
+                                                    </h2>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded">
+                                    <Search size={15} />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Shipping Charges */}
+
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium shrink-0">
+                                <span>Shipping Charges</span>
+                            </label>
+                            <input
+                                type="number"
+                                value={invoice.shippingCharges}
+                                onChange={(e) =>
+                                    dispatch(updateInvoiceField({
+                                        field: "shippingCharges",
+                                        value: Number(e.target.value)
+                                    }))
+                                }
+                                className="w-[150px] h-[50px] border border-gray-300 rounded px-2 py-1 text-right"
+                            />
+
+                        </div>
+
+                        {/* Adjustment */}
+
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium shrink-0">
+                                <span>Adjustment</span>
+                            </label>
+                            <input
+                                type="number"
+                                value={invoice.adjustment}
+                                onChange={(e) =>
+                                    dispatch(updateInvoiceField({
+                                        field: "adjustment",
+                                        value: Number(e.target.value)
+                                    }))
+                                }
+                                className="w-[150px] h-[50px] border border-gray-300 rounded px-2 py-1 text-right"
+                            />
+
                         </div>
 
 
@@ -734,16 +1120,270 @@ export default function NewInvoiceFull() {
                             </table>
                         </div>
 
+                        {/* Add Row buttons */}
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="flex items-center ">
+                                <button
+                                    onClick={() => dispatch(addItem())}
+                                    className="flex items-center gap-1.5 text-sm text-gray-100 hover:text-blue-700 border border-blue-200 hover:border-blue-400 bg-blue-400 
+                                    px-3 py-1.5 rounded-l"
+                                >
+                                    <Plus size={14} />
+                                    Add New Row
+                                </button>
+                                <button className="border border-blue-100 border-l-0 border-blue-200 hover:border-blue-400 bg-blue-400
+                                px-2 py-2 rounded-r text-blue-600">
+                                    <ChevronDown size={16} />
+                                </button>
+                            </div>
+                            <button className="flex items-center gap-1.5 text-sm text-gray-100 hover:text-blue-700 border border-blue-200 hover:border-blue-400 bg-blue-400
+                             px-3 py-1.5 rounded">
+                                <Plus size={14} />
+                                Add Items in Bulk
+                            </button>
+                        </div>
+
+                        {/* Total + Notes */}
+                        <div className="flex gap-12 mb-6">
 
 
-                        {/* .. */}
+
+
+                            {/* Total block */}
+                            <div className="flex-1 max-w-sm ml-auto">
+                                <div className="border border-gray-200 rounded-md px-4 py-3">
+
+                                    {/* Sub Total */}
+                                    <div className="flex items-center justify-between text-sm font-semibold mb-5">
+                                        <span>Sub Total</span>
+                                        <span>{fmt(subtotal)}</span>
+                                    </div>
+
+                                    {/* Discount */}
+                                    <div className="flex items-center justify-between mb-5">
+
+                                        <div className="w-32">
+                                            <span className="text-sm text-gray-700">Discount</span>
+                                        </div>
+
+                                        <div className="w-32">
+                                            <div className="flex border border-gray-300 rounded-md overflow-hidden">
+
+                                                <input
+                                                    type="number"
+                                                    value={invoice.discount ?? ""}
+                                                    onChange={(e) =>
+                                                        dispatch(
+                                                            updateInvoiceField({
+                                                                field: "discount",
+                                                                value: Number(e.target.value),
+                                                            })
+                                                        )
+                                                    }
+                                                    className="w-full px-2 py-2 text-right outline-none"
+                                                />
+
+                                                <div className="px-3 flex items-center border-l border-gray-300 bg-gray-50 text-gray-600">
+                                                    %
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="w-20 text-right">
+                                            {fmt(discount)}
+                                        </div>
+
+                                    </div>
+
+                                    {/* TDS / TCS */}
+                                    <div className="flex items-center justify-between mb-5">
+
+                                        <div className="w-32 border-gray-200">
+                                            <TaxTypeSelector
+                                                value={invoice.salesType}
+                                                onChange={(value) => {
+
+                                                    dispatch(updateInvoiceField({
+                                                        field: "salesType",
+                                                        value,
+                                                    }));
+
+                                                    dispatch(updateInvoiceField({
+                                                        field: "taxId",
+                                                        value: null,
+                                                    }));
+
+                                                    dispatch(updateInvoiceField({
+                                                        field: "taxPercent",
+                                                        value: 0,
+                                                    }));
+
+                                                    dispatch(getTaxMasterByType(value));
+
+                                                }}
+                                            />
+                                        </div>
+
+                                        <div className="w-32">
+                                            <TaxDropdown
+                                                type={invoice.salesType}
+                                                taxes={taxes}
+                                                selectedTax={selectedTax}
+                                                onSelect={(tax) => {
+
+                                                    dispatch(updateInvoiceField({
+                                                        field: "taxId",
+                                                        value: tax.id,
+                                                    }));
+
+                                                    dispatch(updateInvoiceField({
+                                                        field: "taxPercent",
+                                                        value: tax.taxRate,
+                                                    }));
+
+                                                }}
+                                                onManage={() => navigate("/settings/tax-master")}
+                                            />
+                                        </div>
+
+                                        <div className="w-20 text-right text-gray-600">
+                                            - {fmt(tax)}
+                                        </div>
+
+                                    </div>
+
+                                    <hr className="mb-4 border-gray-200" />
+
+                                    {/* Total */}
+                                    <div className="flex items-center justify-between font-semibold">
+
+                                        <span className="text-xl text-gray-700">
+                                            Total (₹)
+                                        </span>
+
+                                        <span className="text-2xl text-gray-700">
+                                            {fmt(total)}
+                                        </span>
+
+                                    </div>
+                                </div>
+
+                                {/* .. */}
+
+
+                                {/* .......... */}
+                                <button
+                                    onClick={() => setShowSummary(!showSummary)}
+                                    className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-700 w-full justify-end"
+                                >
+                                    {/* {showSummary ? "Hide" : "Show"} Total Summary */}
+                                    <ChevronDown
+                                        size={14}
+                                        className={`transition-transform ${showSummary ? "rotate-180" : ""}`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Terms and Payment links */}
+                        {/* Customer Notes */}
+                        <div className="flex-1 max-w-[550px]">
+                            <label className="text-sm font-medium text-gray-700 block mb-2">
+                                Customer Notes
+                            </label>
+                            <textarea
+                                value={invoice.customerNotes}
+                                onChange={(e) => dispatch(setCustomerNotes(e.target.value))}
+                                rows={3}
+                                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
+                            />
+                            <p className="text-xs text-gray-400 mt-1">
+                                Will be displayed on the invoice
+                            </p>
+                        </div>
+
+
+                        <div className="space-y-3 mb-8">
+                            <div>
+                                <label className="text-sm font-medium text-gray-700 block mb-1">
+                                    Terms and Conditions
+                                </label>
+                                <textarea
+                                    rows={3}
+                                    className="w-full max-w-[550px] border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-400 resize-none"
+                                />
+                            </div>
+
+                            <button
+                                onClick={() => setShowGateway(!showGateway)}
+                                className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-700"
+                            >
+                                <div className="w-5 h-5 rounded-full border-2 border-blue-500 flex items-center justify-center">
+                                    <Plus size={12} />
+                                </div>
+                                Add Payment Gateway
+                            </button>
+
+                            {/* payment */}
+                            <InvoiceAddPaymentCard />
+                        </div>
                     </div>
-                    {/* .......... */}
+
+                    {/* Footer */}
+                    <div className="border-t border-gray-200 bg-white px-6 py-4">
+                        <div className="flex items-center justify-between">
 
 
+                            <BottomActionBarInvoice
+                                onSave={handleSave}
+                                onSaveAndNew={handleSaveAndNew}
+                                onSaveAndSend={handleSaveAndSend}
+                                onSaveAsDraft={handleSaveAsDraft}
+                                onUpdate={handleUpdate}
+                                onPreview={handlePreview}
+                                onPrint={handlePrint}
+                                onDownloadPdf={handleDownloadPdf}
+                                onEmail={handleEmail}
+                                onShare={handleShare}
+                                onDuplicate={handleDuplicate}
+                                onDelete={handleDelete}
+                                onMarkAsSent={handleMarkAsSent}
+                                onMarkAsPaid={handleMarkAsPaid}
+                                onVoid={handleVoid}
+                                onCancelInvoice={handleCancelInvoice}
+                                onCancel={handleCancel}
+
+
+                            />
+                            {/* Right Side - Total */}
+                            <div className="flex items-center gap-3">
+                                <div className="flex flex-col items-left">
+                                    <div className="text-sm font-semibold text-gray-800">
+                                        Total Amount:
+                                        <span className="ml-3 text-lg font-bold text-gray-900">
+                                            ₹ {fmt(total)}
+                                        </span>
+                                    </div>
+
+                                    <div className="text-sm text-gray-500">
+                                        Total Quantity:
+                                        <span className="ml-3 font-medium">
+                                            {itemMasters.reduce(
+                                                (sum, item) => sum + Number(item.quantity || 0),
+                                                0
+                                            )}
+                                        </span>
+                                    </div>
+                                </div>
+
+                            </div>
+                            {/* .......... */}
+
+
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div >
-
+        </div>
     )
 }
