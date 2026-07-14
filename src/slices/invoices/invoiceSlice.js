@@ -16,7 +16,11 @@ import {
   loadCustomerInvoices,
 } from "./thunks/invoiceThunks";
 
+// customers
 import { loadCustomers } from "../../slices/customers/thunks/customerThunks";
+
+//  itemMasters
+import { loadItemMasters } from "../../slices/itemMasters/thunks/itemMasterThunks";
 
 // ============================
 // Helpers
@@ -24,18 +28,22 @@ import { loadCustomers } from "../../slices/customers/thunks/customerThunks";
 
 let itemIdCounter = 0;
 
-const makeBlankItem = () => ({
+export const makeBlankItem = () => ({
   id: `item-${Date.now()}-${itemIdCounter++}`,
   itemId: "",
+  itemType: "",
   itemName: "",
   description: "",
+  sellingPrice: 0,
+  purchasePrice: 0,
+  unit: "",
   quantity: 1,
   rate: 0,
   discount: 0,
   taxPercent: 0,
   amount: 0,
+  selected: false,
 });
-
 // ============================
 // Initial State
 // ============================
@@ -84,15 +92,15 @@ const initialState = {
   adjustment: 0,
   totalAmount: 0,
 
+  // Dropdown Data
+  itemMasters: [],
+
   // Invoice Items
-  items: [makeBlankItem()],
-  invoiceItems: [],
+  items: [],
+  invoiceItems: [makeBlankItem()],
   selectedItem: null,
   selectedItemId: null,
   activeItemId: null,
-
-  // Dropdown Data
-  itemMaster: [],
 
   // Search
   searchQuery: "",
@@ -249,47 +257,47 @@ const invoiceSlice = createSlice({
       state.activeItemId = action.payload;
     },
 
-    addItem: (state, action) => {
-      state.items.push(action.payload ?? makeBlankItem());
+    addItem(state, action) {
+      state.invoiceItems.push(action.payload ?? makeBlankItem());
     },
 
     // Component dispatches { id, field, value } (see updateItem calls in
     // NewInvoice.jsx), not { id, updatedFields }. Support both shapes so
     // this works no matter which call site is used.
-    updateItem: (state, action) => {
-      const { id, field, value, updatedFields } = action.payload;
-      const index = state.items.findIndex((item) => item.id === id);
+    updateItem(state, action) {
+      const { id, updatedFields, field, value } = action.payload;
+
+      const index = state.invoiceItems.findIndex((item) => item.id === id);
+
       if (index === -1) return;
 
       if (updatedFields) {
-        state.items[index] = { ...state.items[index], ...updatedFields };
-      } else if (field) {
-        state.items[index][field] = value;
+        state.invoiceItems[index] = {
+          ...state.invoiceItems[index],
+          ...updatedFields,
+        };
+      } else {
+        state.invoiceItems[index][field] = value;
       }
 
-      // Keep amount in sync whenever quantity, rate, or discount changes.
-      if (
-        field === "quantity" ||
-        field === "rate" ||
-        field === "discount" ||
-        updatedFields
-      ) {
-        const qty = Number(state.items[index].quantity) || 0;
-        const rate = Number(state.items[index].rate) || 0;
-        state.items[index].amount =
-          qty * rate - (Number(state.items[index].discount) || 0);
-      }
+      const row = state.invoiceItems[index];
+
+      row.amount =
+        (Number(row.quantity) || 0) * (Number(row.rate) || 0) -
+        (Number(row.discount) || 0);
     },
 
-    removeItem: (state, action) => {
-      state.items = state.items.filter((item) => item.id !== action.payload);
+    removeItem(state, action) {
+      state.invoiceItems = state.invoiceItems.filter(
+        (item) => item.id !== action.payload,
+      );
     },
 
     setItemName: (state, action) => {
       const { id, itemName } = action.payload;
-      const index = state.items.findIndex((item) => item.id === id);
+      const index = state.itemMaster.findIndex((item) => item.id === id);
       if (index !== -1) {
-        state.items[index].itemName = itemName;
+        state.itemMaster[index].itemName = itemName;
       }
     },
 
@@ -430,34 +438,6 @@ const invoiceSlice = createSlice({
         state.error = action.payload;
       })
 
-      //
-
-      .addCase(loadCustomers.pending, (state) => {
-        state.loading = true;
-      })
-
-      .addCase(loadCustomers.fulfilled, (state, action) => {
-        console.log("Redux Customer Payload:", action.payload);
-
-        state.loading = false;
-
-        state.customers = action.payload.content || [];
-
-        state.page = action.payload.page;
-
-        state.pageSize = action.payload.size;
-
-        state.totalElements = action.payload.totalElements;
-
-        state.totalPages = action.payload.totalPages;
-      })
-
-      .addCase(loadCustomers.rejected, (state, action) => {
-        state.loading = false;
-
-        state.error = action.payload;
-      })
-
       // ==========================
       // Get Invoice By Id
       // ==========================
@@ -482,7 +462,7 @@ const invoiceSlice = createSlice({
       })
       .addCase(loadInvoiceNumber.fulfilled, (state, action) => {
         state.loading = false;
-        state.invoiceNumber = action.payload.data.invoiceNumber;
+        state.invoiceNumber = action.payload.invoiceNumber;
       })
       .addCase(loadInvoiceNumber.rejected, (state, action) => {
         state.loading = false;
@@ -567,6 +547,54 @@ const invoiceSlice = createSlice({
         state.selectedItem = action.payload.data;
       })
       .addCase(getInvoiceItemById.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+
+      // ==========================
+      // customers
+      // ==========================
+
+      .addCase(loadCustomers.pending, (state) => {
+        state.loading = true;
+      })
+
+      .addCase(loadCustomers.fulfilled, (state, action) => {
+        console.log("Redux Customer Payload:", action.payload);
+
+        state.loading = false;
+
+        state.customers = action.payload.content || [];
+
+        state.page = action.payload.page;
+
+        state.pageSize = action.payload.size;
+
+        state.totalElements = action.payload.totalElements;
+
+        state.totalPages = action.payload.totalPages;
+      })
+
+      .addCase(loadCustomers.rejected, (state, action) => {
+        state.loading = false;
+
+        state.error = action.payload;
+      })
+
+      // ==========================
+      // itemMasters
+      // ==========================
+
+      .addCase(loadItemMasters.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(loadItemMasters.fulfilled, (state, action) => {
+        state.loading = false;
+        console.log("Payload:", action.payload);
+        state.itemMasters = action.payload;
+      })
+      .addCase(loadItemMasters.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

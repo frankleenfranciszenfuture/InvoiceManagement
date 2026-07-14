@@ -5,16 +5,64 @@ import DatePicker from "react-datepicker";
 import toast from "react-hot-toast";
 
 import { loadCustomers } from "../../../slices/customers/thunks/customerThunks";
+import { loadInvoiceNumber, } from "../../../slices/invoices/thunks/invoiceThunks"
+import { loadItemMasters } from "../../../slices/itemMasters/thunks/itemMasterThunks"
 
 import {
+    // customer related inside invoice
+
     toggleSimplifiedView,
     setCustomerSearch,
     setOpenCustomer,
     setCustomerId,
     setCustomerName,
+
+    // loadInvoice related
+    setOrderNumber,
+    setSubject,
+
+    //dateRelated
+    setInvoiceDate,
+    setDueDate,
+    setTerms,
+
+    //itemMaster
+    setItemSearch,
+    setOpenRowItemDropdown,
+    setActiveItemId,
+    addItem,
+    updateItem,
+    removeItem,
+    //ui
+    setShowSaveMenu,
+    toggleSaveMenu,
+
 } from "../../../slices/invoices/invoiceSlice";
 
-import { ChevronDown, Plus, Search, Settings, X } from "lucide-react";
+import {
+    Search,
+    RotateCcw,
+    HelpCircle,
+    Mail,
+    Globe,
+    MessageCircle,
+    Download,
+    UploadCloud,
+    ChevronDown,
+    FileSpreadsheet,
+    ArrowDown,
+    UserCircle,
+    Plus,
+    X,
+    Settings,
+    ScanLine,
+    Trash2,
+    ChevronRight,
+    ChevronUp,
+    GripHorizontal,
+    Grip,
+    MoreHorizontal
+} from "lucide-react";
 
 export default function NewInvoiceFull() {
 
@@ -38,11 +86,6 @@ export default function NewInvoiceFull() {
         (state) => state.invoice.openCustomer
     );
 
-    useEffect(() => {
-        dispatch(loadCustomers());
-    }, [dispatch]);
-
-
     const filteredCustomers = useMemo(() => {
         return customers.filter((customer) =>
             customer.displayName
@@ -55,6 +98,129 @@ export default function NewInvoiceFull() {
     const simplifiedView = useSelector(
         (state) => state.invoice.simplifiedView
     );
+
+
+    //invoice
+
+    const invoice = useSelector(
+        (state) => state.invoice ?? EMPTY_OBJECT
+    );
+
+    const invoiceNumber = useSelector((state) => state.invoice.invoiceNumber);
+
+
+    // itemMasters
+
+    //showMenu invoice itemMasters
+    const showSaveMenu = useSelector((state) => state.invoice?.showSaveMenu);
+    const saveMenuRef = useRef(null);
+
+    const itemMasters = useSelector(
+        state => state.invoice.itemMasters
+    );
+
+    const invoiceItems = useSelector(
+        state => state.invoice.invoiceItems
+    );
+
+    const selectItems = (state) => state.invoice.invoiceItems ?? [];
+
+    const itemDropdownRef = useRef(null);
+
+    const itemSearch = useSelector((state) => state.invoice?.itemSearch || "");
+
+    const openItemDropdown = useSelector(
+        (state) => state.invoice?.openItemDropdown
+    );
+
+    const openRowItemDropdown = useSelector(
+        (state) => state.invoice?.openRowItemDropdown
+    );
+
+    const activeItemId = useSelector((state) => state.invoice?.activeItemId);
+
+    const editingItemId = useSelector((state) => state.invoice?.editingItemId);
+
+    const filteredItems = useMemo(() => {
+        return itemMasters.filter((item) =>
+            item.itemName
+                ?.toLowerCase()
+                .includes(itemSearch.toLowerCase())
+        );
+    }, [itemMasters, itemSearch]);
+
+
+    // useEffect for dispatch values
+    useEffect(() => {
+        dispatch(loadCustomers());
+        dispatch(loadInvoiceNumber());
+        dispatch(loadItemMasters());
+    }, [dispatch]);
+
+    //useEffect for handleClick enable/disable
+
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (
+                customerDropdownRef.current &&
+                !customerDropdownRef.current.contains(e.target)
+            ) {
+                dispatch(setOpenCustomer(false));
+            }
+
+            // if (
+            //     salesPersonDropdownRef.current &&
+            //     !salesPersonDropdownRef.current.contains(e.target)
+            // ) {
+            //     dispatch(setOpenSalesPerson(false));
+            // }
+
+            if (
+                itemDropdownRef.current &&
+                !itemDropdownRef.current.contains(e.target)
+            ) {
+                dispatch(setOpenRowItemDropdown(false));
+                dispatch(setActiveItemId(null));
+            }
+
+            if (saveMenuRef.current && !saveMenuRef.current.contains(e.target)) {
+                dispatch(setShowSaveMenu(false));
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [dispatch]);
+
+
+
+
+    // handle function
+
+
+    //TermsChanges
+    const handleTermsChange = (term) => {
+        dispatch(setTerms(term));
+
+        const invoiceDate = new Date(invoice.invoiceDate);
+
+        if (term === "Net 15") {
+            invoiceDate.setDate(invoiceDate.getDate() + 15);
+        } else if (term === "Net 30") {
+            invoiceDate.setDate(invoiceDate.getDate() + 30);
+        }
+
+        dispatch(setDueDate(invoiceDate.toISOString().split("T")[0]));
+    };
+
+    //calculations
+    //safeNumber , safeText
+    const safeText = (v) => (v ?? "").toString().toLowerCase();
+    const safeNumber = (v) => Number(v ?? 0);
+
+    //fmt
+    const fmt = (n) => parseFloat(n || 0).toFixed(2);
 
     return (
         <div className="flex h-full bg-gray-50 font-sans text-[13px] overflow-hidden">
@@ -216,13 +382,368 @@ export default function NewInvoiceFull() {
                             </div>
                         </div>
                     </div>
+
+                    {/* ...... */}
+
+                    {/* Invoice # and Date row */}
+                    <div className="px-2 max-w-[1100px]">
+                        {/* Invoice Number */}
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium text-red-500 shrink-0">
+                                Invoice Number<span>#</span>
+                            </label>
+
+                            <div className="relative w-[330px]">
+                                <input
+                                    value={invoiceNumber || ""}
+                                    readOnly
+                                    placeholder="Generating..."
+                                    className="w-full border border-gray-300 rounded px-3 py-2 pr-8 bg-gray-100"
+                                />
+
+                                <Settings
+                                    size={14}
+                                    className="absolute right-3 top-3 text-blue-500"
+                                />
+                            </div>
+                        </div>
+
+
+                        {/* Order Number */}
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium shrink-0">
+                                Order Number<span>#</span>
+                            </label>
+
+                            <div className="relative w-[330px]">
+                                <input
+                                    value={invoice.orderNumber}
+                                    onChange={(e) => dispatch(setOrderNumber(e.target.value))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 pr-8"
+                                />
+                            </div>
+                        </div>
+
+
+
+                        {/* Subject */}
+
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium shrink-0">
+                                Subject<span>#</span>
+                            </label>
+
+                            <div className="relative w-[330px]">
+                                <input
+                                    value={invoice.subject}
+                                    onChange={(e) => dispatch(setSubject(e.target.value))}
+                                    className="w-full border border-gray-300 rounded px-3 py-2 pr-8"
+                                />
+                            </div>
+                        </div>
+
+
+
+                        {/* Invoice Date + Terms + Due Date */}
+                        <div className="flex items-center">
+                            <label className="w-44 text-sm font-medium text-red-500 shrink-0">
+                                Invoice Date*
+                            </label>
+
+                            <DatePicker
+                                selected={
+                                    invoice.invoiceDate ? new Date(invoice.invoiceDate) : null
+                                }
+                                onChange={(date) =>
+                                    dispatch(setInvoiceDate(date.toISOString().split("T")[0]))
+                                }
+                                dateFormat="dd/MM/yyyy"
+                                className="w-[330px] border border-gray-300 rounded px-3 py-2"
+                            />
+
+                            <div className="flex items-center ml-8 gap-3">
+                                <label className="text-sm text-gray-700">Terms</label>
+
+                                <select
+                                    value={invoice.terms}
+                                    onChange={(e) => handleTermsChange(e.target.value)}
+                                    className="w-[150px] border border-gray-300 rounded px-3 py-2"
+                                >
+                                    <option>Due on Receipt</option>
+                                    <option>Net 15</option>
+                                    <option>Net 30</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-center ml-8 gap-3">
+                                <label className="text-sm text-gray-700">Due Date</label>
+
+                                <DatePicker
+                                    selected={invoice.dueDate ? new Date(invoice.dueDate) : null}
+                                    onChange={(date) =>
+                                        dispatch(setDueDate(date.toISOString().split("T")[0]))
+                                    }
+                                    dateFormat="dd/MM/yyyy"
+                                    className="w-[150px] border border-gray-300 rounded px-3 py-2"
+                                />
+                            </div>
+                        </div>
+
+
+                        {/* Item Table */}
+                        <div className="border border-gray-100 rounded-lg mt-4 mb-4 overflow-visible">
+                            <div className="flex items-center justify-between px-4 py-3 bg-white border-b border-gray-200">
+                                <h3 className="text-sm font-semibold text-gray-700">
+                                    Item Table
+                                </h3>
+                                <button className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700">
+                                    <ScanLine size={15} />
+                                    Scan Item
+                                </button>
+                            </div>
+                            <table className="w-full">
+                                <thead>
+                                    <tr className="bg-gray-50 border-b border-gray-200">
+                                        <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-8"></th>
+                                        <th className="text-left px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                                            Item Details
+                                        </th>
+                                        <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">
+                                            Quantity
+                                        </th>
+                                        <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-36">
+                                            <span className="flex items-center justify-end gap-1">
+                                                Rate <Settings size={11} />
+                                            </span>
+                                        </th>
+                                        <th className="text-right px-4 py-2.5 text-xs font-semibold text-gray-500 uppercase tracking-wide w-28">
+                                            Amount
+                                        </th>
+                                        <th className="w-8"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {invoiceItems.map((item) => (
+                                        <tr
+                                            key={item.id}
+                                            className="border-b border-gray-100 hover:bg-gray-50 group"
+                                        >
+                                            <td className="px-3 py-3 text-gray-300">
+                                                <div className="flex flex-col gap-0.5">
+                                                    <Grip />
+                                                </div>
+                                            </td>
+
+                                            {/* Items selected with dropdown */}
+                                            <td className="px-4 py-3 relative">
+                                                {item.selected ? (
+                                                    <div>
+                                                        {/* Selected Item Header */}
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="font-medium text-gray-800 uppercase">
+                                                                {item.description}
+                                                            </span>
+
+                                                            <button
+                                                                onClick={() =>
+                                                                    dispatch(
+                                                                        updateItem({
+                                                                            id: item.id,
+                                                                            field: "selected",
+                                                                            value: false,
+                                                                        }),
+                                                                    )
+                                                                }
+                                                                className=" cursor-pointer text-gray-400 hover:text-red-500"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+
+                                                        {/* Editable Description */}
+                                                        <textarea
+                                                            value={item.description}
+                                                            rows={2}
+                                                            onChange={(e) =>
+                                                                dispatch(
+                                                                    updateItem({
+                                                                        id: item.id,
+                                                                        field: "description",
+                                                                        value: e.target.value,
+                                                                    }),
+                                                                )
+                                                            }
+                                                            className=" cursor-pointer w-full border border-blue-400 rounded-md px-3 py-2 focus:outline-none"
+                                                        />
+                                                    </div>
+                                                ) : (
+                                                    <>
+                                                        <input
+                                                            value={item.description}
+                                                            placeholder="Type or click to select an item."
+                                                            onClick={() => {
+                                                                dispatch(setActiveItemId(item.id));
+                                                                dispatch(setOpenRowItemDropdown(true));
+                                                            }}
+                                                            onChange={(e) => {
+                                                                dispatch(
+                                                                    updateItem({
+                                                                        id: item.id,
+                                                                        field: "description",
+                                                                        value: e.target.value,
+                                                                    }),
+                                                                );
+
+                                                                dispatch(setItemSearch(e.target.value));
+                                                                dispatch(setActiveItemId(item.id));
+                                                                dispatch(setOpenRowItemDropdown(true));
+                                                            }}
+                                                            className=" cursor-pointer w-full text-sm text-gray-500 focus:outline-none"
+                                                        />
+
+                                                        {openRowItemDropdown && activeItemId === item.id && (
+                                                            <div
+                                                                ref={itemDropdownRef}
+                                                                className="absolute top-full left-0 mt-2 w-[600px] bg-white border border-gray-200 rounded-lg shadow-xl z-50"
+                                                            >
+                                                                {" "}
+                                                                <div className="max-h-64 overflow-y-auto p-1">
+                                                                    {filteredItems.length === 0 ? (
+                                                                        <div className="p-3 text-gray-500">
+                                                                            No items found
+                                                                        </div>
+                                                                    ) : (
+                                                                        filteredItems.map((itemMaster) => (
+                                                                            <div
+                                                                                key={itemMaster.id}
+                                                                                onClick={() => {
+                                                                                    dispatch(
+                                                                                        updateItem({
+                                                                                            id: item.id,
+                                                                                            updatedFields: {
+                                                                                                itemId: itemMaster.id,
+                                                                                                itemName: itemMaster.itemName,
+                                                                                                itemType: itemMaster.itemType,
+                                                                                                description:
+                                                                                                    itemMaster.description || itemMaster.itemName,
+                                                                                                sellingPrice: itemMaster.sellingPrice,
+                                                                                                purchasePrice: itemMaster.purchasePrice,
+                                                                                                rate: itemMaster.sellingPrice,
+                                                                                                unit: itemMaster.unit,
+                                                                                                selected: true,
+                                                                                            },
+                                                                                        })
+                                                                                    );
+
+                                                                                    dispatch(setItemSearch(""));
+                                                                                    dispatch(setOpenRowItemDropdown(false));
+                                                                                    dispatch(setActiveItemId(null));
+
+                                                                                    // Add new row only if this is the last invoice row
+                                                                                    const isLastRow =
+                                                                                        item.id === invoiceItems[invoiceItems.length - 1]?.id;
+
+                                                                                    if (isLastRow) {
+                                                                                        dispatch(addItem());
+                                                                                    }
+                                                                                }}
+                                                                                className="cursor-pointer rounded-md px-3 py-3 transition-all
+                                        hover:bg-blue-600  hover:text-white"
+                                                                            >
+                                                                                <div className="font-semibold uppercase group-hover:text-gray-200">
+                                                                                    {itemMaster.itemName}
+                                                                                </div>
+
+                                                                                <div className="text-sm text-gray-500 group-hover:text-blue-100">
+                                                                                    ₹{itemMaster.sellingPrice}
+                                                                                </div>
+
+                                                                                <div className="text-xs text-gray-500 group-hover:text-blue-100">
+                                                                                    {itemMaster.unit}
+                                                                                </div>
+
+                                                                                {itemMaster.description && (
+                                                                                    <div className="text-xs opacity-70 mt-1 group-hover:text-blue-100">
+                                                                                        {itemMaster.description}
+                                                                                    </div>
+                                                                                )}
+
+                                                                            </div>
+                                                                        ))
+                                                                    )}
+                                                                </div>
+                                                                <div className="border-t px-4 py-3">
+                                                                    <button className=" cursor-pointer flex items-center gap-2 text-blue-600">
+                                                                        <Plus size={16} />
+                                                                        Add New Item
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="number"
+                                                    value={safeNumber(item.quantity)}
+                                                    onChange={(e) =>
+                                                        dispatch(
+                                                            updateItem({
+                                                                id: item.id,
+                                                                field: "quantity",
+                                                                value: parseFloat(e.target.value),
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-full text-right text-sm focus:outline-none bg-transparent border-b border-transparent focus:border-blue-400"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3">
+                                                <input
+                                                    type="number"
+                                                    value={safeNumber(item.rate)}
+                                                    onChange={(e) =>
+                                                        dispatch(
+                                                            updateItem({
+                                                                id: item.id,
+                                                                field: "rate",
+                                                                value: parseFloat(e.target.value),
+                                                            }),
+                                                        )
+                                                    }
+                                                    className="w-full text-right text-sm focus:outline-none bg-transparent border-b border-transparent focus:border-blue-400"
+                                                />
+                                            </td>
+                                            <td className="px-4 py-3 text-right text-sm font-semibold text-gray-800">
+                                                {fmt(item.amount)}
+                                            </td>
+                                            <td className="px-2 py-3">
+                                                {invoiceItems.length > 1 && (
+                                                    <button
+                                                        onClick={() => dispatch(removeItem(item.id))}
+                                                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-opacity"
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+
+
+
+                        {/* .. */}
+                    </div>
+                    {/* .......... */}
+
+
                 </div>
-
-                {/* ...... */}
-
-
             </div>
-        </div>
+        </div >
 
     )
 }
