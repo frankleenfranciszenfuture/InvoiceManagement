@@ -21,12 +21,19 @@ import java.util.List;
 public interface InvoiceMapper {
 
     // Entity -> Response
+    @Mapping(target = "taxMasterId", source = "taxMaster.id")
+    @Mapping(target = "taxName", source = "taxMaster.taxName")
+    @Mapping(target = "taxType", source = "taxMaster.taxType")
+    @Mapping(target = "taxRate", source = "taxMaster.taxRate")
     InvoiceResponse toResponse(Invoice invoice);
 
     // Request -> Entity
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "invoiceNumber", ignore = true)
+
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "salesPerson", ignore = true)
+    @Mapping(target = "taxMaster", ignore = true)
     @Mapping(target = "items", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "updatedDate", ignore = true)
@@ -37,11 +44,13 @@ public interface InvoiceMapper {
     @Mapping(target = "pdfGenerated", ignore = true)
     Invoice toEntity(InvoiceRequest request);
 
-    // Update existing entity
+    // Update
     @BeanMapping(nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
     @Mapping(target = "id", ignore = true)
+    @Mapping(target = "invoiceNumber", ignore = true)
     @Mapping(target = "customer", ignore = true)
     @Mapping(target = "salesPerson", ignore = true)
+    @Mapping(target = "taxMaster", ignore = true)
     @Mapping(target = "items", ignore = true)
     @Mapping(target = "createdDate", ignore = true)
     @Mapping(target = "updatedDate", ignore = true)

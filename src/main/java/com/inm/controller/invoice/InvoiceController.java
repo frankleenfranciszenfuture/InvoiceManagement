@@ -11,6 +11,9 @@ import com.inm.enums.InvoiceStatus;
 import com.inm.enums.ItemStatus;
 import com.inm.service.InvoiceService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,8 +31,14 @@ public class InvoiceController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public InvoiceResponse create(@RequestBody InvoiceRequest request) {
-        return invoiceService.create(request);
+    public ResponseEntity<ApiResponse<InvoiceResponse>> create(@RequestBody InvoiceRequest request) {
+
+        InvoiceResponse response = invoiceService.create(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(ApiResponse.success(
+                        "Invoice created successfully.",
+                        response));
     }
 
     @GetMapping("/customer/{customerId}")
@@ -76,15 +85,31 @@ public class InvoiceController {
         );
     }
 
-    @GetMapping("/next-number")
-    public ResponseEntity<ApiResponse> getNextInvoiceNumber() {
 
-        String invoiceNumber = invoiceService.generateInvoiceNumber();
+    @GetMapping("/status")
+    public ResponseEntity<ApiResponse<Page<InvoiceResponse>>> searchInvoiceByStatus(
+            @RequestParam InvoiceStatus invoiceStatus,
+            @RequestParam(required = false) String search,
+            @PageableDefault(size = 10) Pageable pageable) {
+
+        Page<InvoiceResponse> invoices =
+                invoiceService.searchInvoiceByStatus(invoiceStatus, search, pageable);
+
+        return ResponseEntity.ok(
+                ApiResponse.success("Invoices fetched successfully.", invoices)
+        );
+    }
+
+    @GetMapping("/generate")
+    public ResponseEntity<ApiResponse<InvoiceResponse>> generateInvoiceNumber() {
+
+        InvoiceResponse response = new InvoiceResponse();
+        response.setInvoiceNumber(invoiceService.generateInvoiceNumber());
 
         return ResponseEntity.ok(
                 ApiResponse.success(
                         "Invoice number generated successfully.",
-                        Map.of("invoiceNumber", invoiceNumber)
+                        response
                 )
         );
     }

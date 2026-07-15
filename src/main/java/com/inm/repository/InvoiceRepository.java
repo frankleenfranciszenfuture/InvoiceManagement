@@ -12,6 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
@@ -68,14 +69,8 @@ AND (
 
 
 
-            @Query(value = """
-        SELECT invoice_number
-        FROM invoices
-        WHERE invoice_number LIKE CONCAT(:prefix, '%')
-        ORDER BY invoice_number DESC
-        LIMIT 1
-        """, nativeQuery = true)
-            String findLastInvoiceNumber(@Param("prefix") String prefix);
+    Optional<Invoice> findTopByInvoiceNumberStartingWithOrderByInvoiceNumberDesc(String prefix);
+
 
 }
 

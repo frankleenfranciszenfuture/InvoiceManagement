@@ -10,11 +10,9 @@ import com.inm.enums.InvoiceStatus;
 import com.inm.exception.ResourceNotFoundException;
 import com.inm.mapper.InvoiceItemMapper;
 import com.inm.mapper.InvoiceMapper;
-import com.inm.repository.CustomerRepository;
-import com.inm.repository.InvoiceRepository;
-import com.inm.repository.ItemMasterRepository;
-import com.inm.repository.SalesPersonRepository;
+import com.inm.repository.*;
 import com.inm.service.EmailService;
+import com.inm.service.ExchangeRateService;
 import com.inm.service.InvoiceService;
 import com.inm.service.PdfService;
 import org.springframework.data.domain.Page;
@@ -30,6 +28,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +47,10 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     private final InvoiceItemMapper invoiceItemMapper;
 
+    private final TaxMasterRepository taxMasterRepository;
+
+    private final ExchangeRateService exchangeRateService;
+
 
     // Optional Services
     private final EmailService emailService;
@@ -61,25 +64,57 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setInvoiceNumber(generateInvoiceNumber());
 
         Customer customer = customerRepository.findById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("Customer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
 
         SalesPerson salesPerson = salesPersonRepository.findById(request.getSalesPersonId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Sales Person not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Sales Person not found"));
 
         invoice.setCustomer(customer);
         invoice.setSalesPerson(salesPerson);
 
-        if (invoice.getInvoiceStatus() == null) {
-            invoice.setInvoiceStatus(InvoiceStatus.ACTIVE);
+        if (request.getTaxMasterId() != null) {
+            TaxMaster taxMaster = taxMasterRepository.findById(request.getTaxMasterId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Tax not found"));
+
+            invoice.setTaxMaster(taxMaster);
         }
 
+        invoice.setInvoiceStatus(
+                request.getInvoiceStatus() != null
+                        ? request.getInvoiceStatus()
+                        : InvoiceStatus.ACTIVE
+        );
+
+        if (request.getCurrency() == null) {
+            request.setCurrency("INR");
+        }
+
+        if (request.getCurrency() == null || request.getCurrency().isBlank()) {
+            request.setCurrency("INR");
+        }
+
+        BigDecimal exchangeRate;
+
+        if ("INR".equalsIgnoreCase(request.getCurrency())) {
+            exchangeRate = BigDecimal.ONE;
+        } else {
+            exchangeRate = exchangeRateService.getExchangeRate(
+                    request.getCurrency(),
+                    "INR",
+                    request.getInvoiceDate()
+            );
+        }
+
+        invoice.setCurrency(request.getCurrency());
+        invoice.setExchangeRate(exchangeRate);
+
         prepareInvoiceItems(invoice, request.getItems());
+
+        calculateInvoiceTotals(invoice);
 
         Invoice savedInvoice = invoiceRepository.save(invoice);
 
         return invoiceMapper.toResponse(savedInvoice);
-
     }
 
     @Override
@@ -107,10 +142,30 @@ public class InvoiceServiceImpl implements InvoiceService {
 
         invoice.setCustomer(customer);
         invoice.setSalesPerson(salesPerson);
+        invoice.setInvoiceStatus(request.getInvoiceStatus());
 
         if (invoice.getInvoiceStatus() == null) {
             invoice.setInvoiceStatus(InvoiceStatus.ACTIVE);
         }
+
+        if (request.getCurrency() == null || request.getCurrency().isBlank()) {
+            request.setCurrency("INR");
+        }
+
+        BigDecimal exchangeRate;
+
+        if ("INR".equalsIgnoreCase(request.getCurrency())) {
+            exchangeRate = BigDecimal.ONE;
+        } else {
+            exchangeRate = exchangeRateService.getExchangeRate(
+                    request.getCurrency(),
+                    "INR",
+                    request.getInvoiceDate()
+            );
+        }
+
+        invoice.setCurrency(request.getCurrency());
+        invoice.setExchangeRate(exchangeRate);
 
 
         prepareInvoiceItems(invoice, request.getItems());
@@ -173,6 +228,17 @@ public class InvoiceServiceImpl implements InvoiceService {
                 .first(invoicePage.isFirst())
                 .last(invoicePage.isLast())
                 .build();
+    }
+
+    @Override
+    public Page<InvoiceResponse> searchInvoiceByStatus(
+            InvoiceStatus invoiceStatus,
+            String search,
+            Pageable pageable) {
+
+        return invoiceRepository
+                .searchInvoiceByStatus(invoiceStatus, search, pageable)
+                .map(invoiceMapper::toResponse);
     }
 
 
@@ -482,7 +548,6 @@ public class InvoiceServiceImpl implements InvoiceService {
         List<InvoiceItem> invoiceItems = new ArrayList<>();
 
         BigDecimal subTotal = BigDecimal.ZERO;
-        BigDecimal taxAmount = BigDecimal.ZERO;
 
         for (InvoiceItemRequest dto : itemRequests) {
 
@@ -496,67 +561,116 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             InvoiceItem item = new InvoiceItem();
 
-            item.setItem(itemMaster);
             item.setInvoice(invoice);
-            item.setDescription(dto.getDescription());
+            item.setItem(itemMaster);
+
+            item.setDescription(
+                    dto.getDescription() != null
+                            ? dto.getDescription()
+                            : itemMaster.getItemName()
+            );
+
             item.setQuantity(dto.getQuantity());
             item.setRate(dto.getRate());
-            item.setDiscount(dto.getDiscount());
+
+            BigDecimal discount = dto.getDiscount() != null
+                    ? dto.getDiscount()
+                    : BigDecimal.ZERO;
+
+            item.setDiscount(discount);
+
             item.setTaxPercent(dto.getTaxPercent());
-            item.setDescription(itemMaster.getItemName());
 
-            BigDecimal quantity = dto.getQuantity() != null ? dto.getQuantity() : BigDecimal.ZERO;
-            BigDecimal rate = dto.getRate() != null ? dto.getRate() : BigDecimal.ZERO;
+            BigDecimal quantity = dto.getQuantity() != null
+                    ? dto.getQuantity()
+                    : BigDecimal.ZERO;
 
+            BigDecimal rate = dto.getRate() != null
+                    ? dto.getRate()
+                    : BigDecimal.ZERO;
 
             BigDecimal amount = quantity.multiply(rate);
 
-            if (dto.getDiscount() != null &&
-                    dto.getDiscount().compareTo(BigDecimal.ZERO) > 0) {
+            amount = amount.subtract(discount);
 
-                amount = amount.setScale(2, RoundingMode.HALF_UP);
+            if (amount.compareTo(BigDecimal.ZERO) < 0) {
+                amount = BigDecimal.ZERO;
             }
+
+            amount = amount.setScale(2, RoundingMode.HALF_UP);
 
             item.setAmount(amount);
 
             subTotal = subTotal.add(amount);
-
-            invoice.setTotalAmount(subTotal.add(taxAmount));
-
-            if (dto.getTaxPercent() != null && dto.getTaxPercent().compareTo(BigDecimal.ZERO) > 0) {
-
-                BigDecimal tax = amount
-                        .multiply(dto.getTaxPercent())
-                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
-
-                taxAmount = taxAmount.add(tax);
-            }
 
             invoiceItems.add(item);
         }
 
         invoice.setItems(invoiceItems);
         invoice.setSubTotal(subTotal);
+    }
+
+    private void calculateInvoiceTotals(Invoice invoice) {
+
+        BigDecimal subTotal = invoice.getSubTotal() != null
+                ? invoice.getSubTotal()
+                : BigDecimal.ZERO;
+
+        BigDecimal discount = invoice.getDiscountAmount() != null
+                ? invoice.getDiscountAmount()
+                : BigDecimal.ZERO;
+
+        BigDecimal shipping = invoice.getShippingCharges() != null
+                ? invoice.getShippingCharges()
+                : BigDecimal.ZERO;
+
+        BigDecimal adjustment = invoice.getAdjustment() != null
+                ? invoice.getAdjustment()
+                : BigDecimal.ZERO;
+
+        BigDecimal taxAmount = BigDecimal.ZERO;
+
+        if (invoice.getTaxMaster() != null) {
+
+            BigDecimal taxRate = invoice.getTaxMaster().getTaxRate();
+
+            if (taxRate != null) {
+
+                taxAmount = subTotal
+                        .subtract(discount)
+                        .multiply(taxRate)
+                        .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+            }
+        }
+
         invoice.setTaxAmount(taxAmount);
-        invoice.setTotalAmount(subTotal.add(taxAmount));
+
+        BigDecimal total = subTotal
+                .subtract(discount)
+                .add(taxAmount)
+                .add(shipping)
+                .add(adjustment);
+
+        invoice.setTotalAmount(total);
     }
 
     @Override
     public String generateInvoiceNumber() {
 
         int year = LocalDate.now().getYear();
-
         String prefix = "INV" + year + "-";
 
-        String lastInvoice = invoiceRepository.findLastInvoiceNumber(prefix);
+        Optional<Invoice> latestInvoice =
+                invoiceRepository.findTopByInvoiceNumberStartingWithOrderByInvoiceNumberDesc(prefix);
 
-        int next = 1;
+        int nextNumber = 1;
 
-        if (lastInvoice != null && !lastInvoice.isBlank()) {
-            String number = lastInvoice.substring(prefix.length());
-            next = Integer.parseInt(number) + 1;
+        if (latestInvoice.isPresent()) {
+            String lastInvoiceNumber = latestInvoice.get().getInvoiceNumber();
+            String sequence = lastInvoiceNumber.substring(prefix.length());
+            nextNumber = Integer.parseInt(sequence) + 1;
         }
 
-        return prefix + String.format("%04d", next);
+        return prefix + String.format("%04d", nextNumber);
     }
 }

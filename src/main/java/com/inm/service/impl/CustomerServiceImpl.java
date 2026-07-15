@@ -7,6 +7,7 @@ import com.inm.dto.customer.CustomerRequestDTO;
 import com.inm.dto.customer.CustomerResponseDTO;
 import com.inm.entity.Customer;
 import com.inm.enums.CustomerStatus;
+import com.inm.enums.ItemStatus;
 import com.inm.exception.DuplicateResourceException;
 import com.inm.exception.ResourceNotFoundException;
 import com.inm.mapper.CustomerMapper;
@@ -41,7 +42,10 @@ public class CustomerServiceImpl implements CustomerService {
         System.out.println("Language after Mapper = " + customer.getCustomerLanguage());
 
         customer.setIsDeleted(false);
-        customer.setStatus(request.getStatus());
+
+        if (customer.getStatus() == null) {
+            customer.setStatus(request.getStatus());
+        }
 
         Customer savedCustomer = repository.save(customer);
 

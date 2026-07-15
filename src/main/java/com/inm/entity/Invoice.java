@@ -1,6 +1,7 @@
 package com.inm.entity;
 
 import com.inm.enums.InvoiceStatus;
+import com.inm.enums.TaxType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -70,6 +71,17 @@ public class Invoice {
     )
     @Builder.Default
     private List<InvoiceItem> items = new ArrayList<>();
+
+
+    //Tax
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tax_master_id")
+    private TaxMaster taxMaster;
+
+    private String taxNameSnapshot;
+    private BigDecimal taxRateSnapshot;
+    private TaxType taxTypeSnapshot;
 
     // Amounts
     @Column(precision = 18, scale = 2)
