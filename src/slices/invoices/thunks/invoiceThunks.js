@@ -31,10 +31,13 @@ export const loadInvoices = createAsyncThunk(
 export const addInvoice = createAsyncThunk(
   "invoice/addInvoice",
   async (data, { rejectWithValue }) => {
+    console.log("Thunk received:", data);
+
     try {
       const response = await createInvoice(data);
       return response;
     } catch (error) {
+      console.error(error);
       return rejectWithValue(error.response?.data || error.message);
     }
   },

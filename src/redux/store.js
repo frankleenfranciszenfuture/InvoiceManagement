@@ -21,6 +21,9 @@ import salesPersonReducer from "../slices/salesPerson/salesPersonSlice";
 // tax
 import taxMasterReducer from "../slices/invoices/tax/taxMasterSlice";
 
+//currency
+import exchangeRateReducer from "../slices/invoices/currency/currencySlice";
+
 import dashboardReducer from "../slices/dashboard/dashboardSlice";
 
 export const store = configureStore({
@@ -47,6 +50,9 @@ export const store = configureStore({
 
     //salesPerson
     salesPerson: salesPersonReducer,
+
+    //currency
+    exchangeRate: exchangeRateReducer,
 
     // dashboard
     dashboard: dashboardReducer,

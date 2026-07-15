@@ -25,6 +25,11 @@ import { loadItemMasters } from "../../slices/itemMasters/thunks/itemMasterThunk
 // SalesPerson
 import { loadSalesPerson } from "../../slices/salesPerson/thunks/salesPersonThunks";
 
+import {
+  loadExchangeRate,
+  loadCurrencies,
+} from "../../slices/invoices/currency/thunks/currencyThunks";
+
 // ============================
 // Helpers
 // ============================
@@ -89,18 +94,29 @@ const initialState = {
 
   // Totals
   subTotal: 0,
-  discountAmount: 0,
+  discount: 0,
+  discountType: "PERCENTAGE", // PERCENTAGE | AMOUNT
+
   taxAmount: 0,
+
   shippingCharges: 0,
   adjustment: 0,
   totalAmount: 0,
 
+  tdsRate: 0,
+  tcsRate: 0,
+
+  isTdsEnabled: false,
+  isTcsEnabled: false,
+
+  // Invoice Items
+  invoiceItems: [makeBlankItem()],
+
   // Dropdown Data
   itemMasters: [],
 
-  // Invoice Items
-  items: [],
-  invoiceItems: [makeBlankItem()],
+  // selectItems
+
   selectedItem: null,
   selectedItemId: null,
   activeItemId: null,
@@ -120,6 +136,20 @@ const initialState = {
   showInvoiceMenu: false,
   simplifiedView: false,
   invoiceTemplate: "template1",
+
+  //currency exchangeRate
+  exchangeRate: null,
+  currencies: {},
+  currency: "INR",
+  currencySearch: "",
+  openCurrency: false,
+
+  loadingExchangeRate: false,
+  loadingCurrencies: false,
+
+  exchangeRateError: null,
+
+  errors: {},
 };
 
 const invoiceSlice = createSlice({
@@ -165,6 +195,11 @@ const invoiceSlice = createSlice({
     setOrderNumber: (state, action) => {
       state.orderNumber = action.payload;
     },
+
+    setReferenceNumber: (state, action) => {
+      state.referenceNumber = action.payload;
+    },
+
     setCustomerNotes: (state, action) => {
       state.customerNotes = action.payload;
     },
@@ -274,6 +309,7 @@ const invoiceSlice = createSlice({
 
       if (index === -1) return;
 
+      // Update row
       if (updatedFields) {
         state.invoiceItems[index] = {
           ...state.invoiceItems[index],
@@ -285,9 +321,59 @@ const invoiceSlice = createSlice({
 
       const row = state.invoiceItems[index];
 
-      row.amount =
-        (Number(row.quantity) || 0) * (Number(row.rate) || 0) -
-        (Number(row.discount) || 0);
+      // Calculate row amount
+      const qty = Number(row.quantity) || 0;
+      const rate = Number(row.rate) || 0;
+      const discount = Number(row.discount) || 0;
+      const taxPercent = Number(row.taxPercent) || 0;
+
+      row.amount = qty * rate - discount;
+
+      if (row.amount < 0) {
+        row.amount = 0;
+      }
+
+      // ==========================
+      // Recalculate Invoice Totals
+      // ==========================
+
+      const subTotal = state.invoiceItems.reduce(
+        (total, item) => total + (Number(item.amount) || 0),
+        0,
+      );
+
+      const invoiceDiscount =
+        state.discountType === "PERCENTAGE"
+          ? (subTotal * (Number(state.discount) || 0)) / 100
+          : Number(state.discount) || 0;
+
+      const taxAmount = state.invoiceItems.reduce((total, item) => {
+        const tax = Number(item.taxPercent) || 0;
+        const amount = Number(item.amount) || 0;
+
+        return total + (amount * tax) / 100;
+      }, 0);
+
+      const tdsAmount = state.isTdsEnabled
+        ? ((subTotal - invoiceDiscount) * (Number(state.tdsRate) || 0)) / 100
+        : 0;
+
+      const tcsAmount = state.isTcsEnabled
+        ? ((subTotal - invoiceDiscount) * (Number(state.tcsRate) || 0)) / 100
+        : 0;
+
+      state.subTotal = subTotal;
+      state.discountAmount = invoiceDiscount;
+      state.taxAmount = taxAmount;
+
+      state.totalAmount =
+        subTotal -
+        invoiceDiscount +
+        taxAmount +
+        tcsAmount -
+        tdsAmount +
+        (Number(state.shippingCharges) || 0) +
+        (Number(state.adjustment) || 0);
     },
 
     removeItem(state, action) {
@@ -326,7 +412,7 @@ const invoiceSlice = createSlice({
       state.salesPersonId = action.payload.salesPerson?.id ?? "";
       state.salesPersonName = action.payload.salesPerson?.salesPersonName ?? "";
 
-      state.items =
+      state.invoiceItems =
         action.payload.items?.length > 0
           ? action.payload.items
           : [makeBlankItem()];
@@ -342,12 +428,87 @@ const invoiceSlice = createSlice({
     },
 
     // ==========================
+    // currency
+    // ==========================
+
+    setCurrency: (state, action) => {
+      state.currency = action.payload;
+    },
+
+    setCurrencySearch: (state, action) => {
+      state.currencySearch = action.payload;
+    },
+
+    setOpenCurrency: (state, action) => {
+      state.openCurrency = action.payload;
+    },
+
+    clearCurrency: (state) => {
+      state.currency = "INR";
+      state.currencySearch = "";
+      state.exchangeRate = null;
+    },
+
+    // errors
+
+    setErrors: (state, action) => {
+      state.errors = action.payload;
+    },
+
+    clearErrors: (state) => {
+      state.errors = {};
+    },
+
+    // ==========================
     // Reset
     // ==========================
+    //rest
+    resetDirty(state) {
+      state.isDirty = false;
+    },
+
     resetInvoice: () => ({
       ...initialState,
-      items: [makeBlankItem()],
+      invoiceItems: [makeBlankItem()],
     }),
+
+    //invoiceTemplate
+
+    changeInvoiceStatus: (state, action) => {
+      const { id, status } = action.payload;
+
+      const invoice = state.invoices.find((invoice) => invoice.id === id);
+
+      if (invoice) {
+        invoice.status = status;
+      }
+    },
+
+    updateBank: (state, action) => {
+      const { field, value } = action.payload;
+
+      if (state.selectedInvoice?.bank) {
+        state.selectedInvoice.bank[field] = value;
+      }
+    },
+
+    updateTax: (state, action) => {
+      if (state.selectedInvoice) {
+        state.selectedInvoice.tax = action.payload.value;
+      }
+    },
+
+    setInvoiceTemplate: (state, action) => {
+      console.log("Reducer called:", action.payload);
+
+      state.invoiceTemplate = action.payload;
+    },
+
+    setSelectedInvoice: (state, action) => {
+      console.log("Reducer called:", action.payload);
+
+      state.selectedInvoice = action.payload;
+    },
   },
 
   extraReducers: (builder) => {
@@ -388,8 +549,10 @@ const invoiceSlice = createSlice({
       })
       .addCase(addInvoice.fulfilled, (state, action) => {
         state.loading = false;
-        state.invoices.unshift(action.payload.data);
-        state.selectedInvoice = action.payload.data;
+
+        state.invoices.unshift(action.payload);
+
+        state.selectedInvoice = action.payload;
       })
       .addCase(addInvoice.rejected, (state, action) => {
         state.loading = false;
@@ -617,6 +780,40 @@ const invoiceSlice = createSlice({
       .addCase(loadSalesPerson.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
+      })
+
+      // ==========================
+      // Exchange Rate
+      // ==========================
+
+      .addCase(loadExchangeRate.pending, (state) => {
+        state.loadingExchangeRate = true;
+        state.exchangeRateError = null;
+      })
+      .addCase(loadExchangeRate.fulfilled, (state, action) => {
+        state.loadingExchangeRate = false;
+        state.exchangeRate = action.payload;
+      })
+      .addCase(loadExchangeRate.rejected, (state, action) => {
+        state.loadingExchangeRate = false;
+        state.exchangeRateError = action.payload;
+      })
+
+      // ==========================
+      // Currencies
+      // ==========================
+
+      .addCase(loadCurrencies.pending, (state) => {
+        state.loadingCurrencies = true;
+        state.exchangeRateError = null;
+      })
+      .addCase(loadCurrencies.fulfilled, (state, action) => {
+        state.loadingCurrencies = false;
+        state.currencies = action.payload;
+      })
+      .addCase(loadCurrencies.rejected, (state, action) => {
+        state.loadingCurrencies = false;
+        state.exchangeRateError = action.payload;
       });
   },
 });
@@ -624,7 +821,7 @@ const invoiceSlice = createSlice({
 // ==========================================
 // Memoized Selectors
 // ==========================================
-const selectItems = (state) => state.invoice.items ?? [];
+const selectItems = (state) => state.invoice.invoiceItems ?? [];
 
 export const selectSubTotal = createSelector([selectItems], (items) =>
   items.reduce(
@@ -634,21 +831,54 @@ export const selectSubTotal = createSelector([selectItems], (items) =>
   ),
 );
 
-export const selectDiscountAmount = createSelector([selectItems], (items) =>
-  items.reduce((total, item) => total + (Number(item.discount) || 0), 0),
+export const selectDiscountAmount = createSelector(
+  [
+    selectSubTotal,
+    (state) => Number(state.invoice.discount) || 0,
+    (state) => state.invoice.discountType,
+  ],
+  (subtotal, value, type) => {
+    if (type === "PERCENTAGE") {
+      return (subtotal * value) / 100;
+    }
+
+    return value;
+  },
 );
 
-export const selectTaxAmount = createSelector([selectItems], (items) =>
-  items.reduce((total, item) => {
-    const qty = Number(item.quantity) || 0;
-    const rate = Number(item.rate) || 0;
-    const discount = Number(item.discount) || 0;
-    const tax = Number(item.taxPercent) || 0;
+export const selectTaxAmount = createSelector(
+  [
+    selectSubTotal,
+    selectDiscountAmount,
+    (state) => Number(state.invoice.taxAmount) || 0,
+  ],
+  (subtotal, discountAmount, taxRate) => {
+    const taxableAmount = subtotal - discountAmount;
 
-    const taxable = qty * rate - discount;
+    return (taxableAmount * taxRate) / 100;
+  },
+);
 
-    return total + (taxable * tax) / 100;
-  }, 0),
+export const selectTdsAmount = createSelector(
+  [
+    selectSubTotal,
+    selectDiscountAmount,
+    (state) => Number(state.invoice.tdsRate) || 0,
+    (state) => state.invoice.isTdsEnabled,
+  ],
+  (subtotal, discount, rate, enabled) =>
+    enabled ? ((subtotal - discount) * rate) / 100 : 0,
+);
+
+export const selectTcsAmount = createSelector(
+  [
+    selectSubTotal,
+    selectDiscountAmount,
+    (state) => Number(state.invoice.tcsRate) || 0,
+    (state) => state.invoice.isTcsEnabled,
+  ],
+  (subtotal, discount, rate, enabled) =>
+    enabled ? ((subtotal - discount) * rate) / 100 : 0,
 );
 
 export const selectGrandTotal = createSelector(
@@ -656,17 +886,36 @@ export const selectGrandTotal = createSelector(
     selectSubTotal,
     selectDiscountAmount,
     selectTaxAmount,
+    selectTdsAmount,
+    selectTcsAmount,
     (state) => Number(state.invoice.shippingCharges) || 0,
     (state) => Number(state.invoice.adjustment) || 0,
   ],
-  (subtotal, discount, tax, shipping, adjustment) =>
-    subtotal - discount + tax + shipping + adjustment,
+  (subtotal, discount, tax, tds, tcs, shipping, adjustment) =>
+    subtotal - discount - tax + tcs - tds + shipping + adjustment,
 );
 
 export const selectInvoiceCount = (state) => state.invoice.totalElements;
 export const selectSelectedInvoice = (state) => state.invoice.selectedInvoice;
 export const selectInvoiceLoading = (state) => state.invoice.loading;
 export const selectInvoiceError = (state) => state.invoice.error;
+
+// ==========================================
+// Currency
+// ==========================================
+export const selectFilteredCurrencies = createSelector(
+  [
+    (state) => state.invoice.currencies,
+    (state) => state.invoice.currencySearch,
+  ],
+  (currencies, search) => {
+    return Object.entries(currencies).filter(
+      ([code, name]) =>
+        code.toLowerCase().includes(search.toLowerCase()) ||
+        name.toLowerCase().includes(search.toLowerCase()),
+    );
+  },
+);
 
 // ==========================================
 // Actions
@@ -685,6 +934,7 @@ export const {
   setTerms,
   setSubject,
   setOrderNumber,
+  setReferenceNumber,
   setCustomerNotes,
   setInvoiceStatus,
 
@@ -725,9 +975,28 @@ export const {
   removeItem,
   setItemName,
 
+  //currency & exchangeRate
+
+  setCurrency,
+  setCurrencySearch,
+  setOpenCurrency,
+  setCurrencyDropDown,
+  clearCurrency,
+
   // Selected Invoice / Reset
   setSelectedInvoice,
   resetInvoice,
+  resetDirty,
+
+  //errors
+  setErrors,
+  clearErrors,
+
+  //invoiceTemplate
+  changeInvoiceStatus,
+  updateBank,
+  updateTax,
+  setInvoiceTemplate,
 } = invoiceSlice.actions;
 
 export default invoiceSlice.reducer;

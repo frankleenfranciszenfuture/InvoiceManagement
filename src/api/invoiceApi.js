@@ -8,8 +8,20 @@ export const fetchInvoices = async (params) => {
 
 // create invoices
 export const createInvoice = async (data) => {
-  const response = await api.post("/invoices", data);
-  return response.data.data; // unwrap to the actual customer object
+  try {
+    console.log("Sending Invoice:", JSON.stringify(data, null, 2));
+
+    const response = await api.post("/invoices", data);
+
+    console.log("Response:", response.data);
+
+    return response.data.data;
+  } catch (error) {
+    console.error("Status:", error.response?.status);
+    console.error("Response:", error.response?.data);
+    console.error("Request:", JSON.stringify(data, null, 2));
+    throw error;
+  }
 };
 
 // update invoice

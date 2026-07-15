@@ -7,7 +7,7 @@ import { X } from "lucide-react";
 // import CreateInvoiceModal from "../pages/CreateInvoiceModal";
 // import CreateCustomerModal from "../pages/customers/Createcustomermodal";
 // import ViewInvoiceModal from "../pages/ViewInvoiceModal";
-// import ChangeTemplateModal from "../templateModel/ChangeTemplateModal";
+import ChangeTemplateModal from "../../invoices/overViewCardInvoices/template/templates/ChangeTemplateModal";
 // import CustomerViewModal from "../pages/customers/CustomerViewModal";
 import AddContactPerson from "../../customers/pages/AddContactPerson";
 
@@ -18,9 +18,9 @@ export default function Modal() {
 
   if (!type) return null; // ✅ restored — bails out completely when no modal is open
 
-  // if (type === "changeTemplate") {
-  //   return <ChangeTemplateModal invoiceId={data?.invoiceId} />;
-  // }
+  if (type === "changeTemplate") {
+    return <ChangeTemplateModal invoiceId={data?.invoiceId} />;
+  }
 
   const modalMap = {
     // createCustomer: CreateCustomerModal,

@@ -5,12 +5,13 @@ import DatePicker from "react-datepicker";
 import toast from "react-hot-toast";
 
 import { loadCustomers } from "../../../slices/customers/thunks/customerThunks";
-import { loadInvoiceNumber, } from "../../../slices/invoices/thunks/invoiceThunks"
+import { loadInvoiceNumber, addInvoice, loadInvoices } from "../../../slices/invoices/thunks/invoiceThunks"
 import { loadItemMasters } from "../../../slices/itemMasters/thunks/itemMasterThunks"
 import { loadTaxMasters, getTaxMasterByType } from "../../../slices/invoices/tax/thunks/taxMasterThunks";
 import { loadSalesPerson } from "../../../slices/salesPerson/thunks/salesPersonThunks";
+import { loadCurrencies, loadExchangeRate } from "../../../slices/invoices/currency/thunks/currencyThunks"
 
-
+import { validateInvoice } from "../../../invoices/utils/validateInvoice";
 import {
     // customer related inside invoice
     toggleSimplifiedView,
@@ -23,6 +24,7 @@ import {
 
     // loadInvoice related
     setOrderNumber,
+    setReferenceNumber,
     setSubject,
     //......................//
 
@@ -47,6 +49,8 @@ import {
     selectSubTotal,
     selectDiscountAmount,
     selectTaxAmount,
+    selectTcsAmount,
+    selectTdsAmount,
     selectGrandTotal,
     //......................//
 
@@ -59,6 +63,21 @@ import {
     setSalesPersonName,
     setSalesPersonSearch,
     setOpenSalesPerson,
+
+    //currency & exchangerate
+    setCurrency,
+    setOpenCurrency,
+    selectFilteredCurrencies,
+    setCurrencySearch,
+
+
+    //errors
+    setErrors,
+    clearErrors,
+
+    //rest
+    resetDirty,
+    resetInvoice
 
 } from "../../../slices/invoices/invoiceSlice";
 
@@ -93,6 +112,7 @@ import BottomActionBarInvoice from "../../pages/createInvoice/BottomActionBarInv
 export default function NewInvoiceFull() {
 
     const dispatch = useDispatch();
+    const navigate = useNavigate();
 
     const EMPTY_ARRAY = [];
     const EMPTY_OBJECT = {};
@@ -130,6 +150,7 @@ export default function NewInvoiceFull() {
     const invoice = useSelector(
         (state) => state.invoice ?? EMPTY_OBJECT
     );
+
 
     const invoiceNumber = useSelector((state) => state.invoice.invoiceNumber);
 
@@ -208,14 +229,65 @@ export default function NewInvoiceFull() {
         );
     }, [salesPerson, salesPersonSearch]);
 
+
+    //exchangeRate, currency
+
+    const {
+        exchangeRate,
+        currencies,
+        loadingExchangeRate,
+    } = useSelector((state) => state.invoice);
+
+    //currencyDropDown
+    const currencyDropdownRef = useRef(null);
+
+
+    const currencySearch = useSelector(
+        (state) => state.invoice.currencySearch
+    );
+
+    const openCurrency = useSelector(
+        (state) => state.invoice.openCurrency
+    );
+
+    //filterCurrency
+    const filteredCurrencies = useSelector(selectFilteredCurrencies);
+
     // useEffect for dispatch values
     useEffect(() => {
         dispatch(loadCustomers());
         dispatch(loadInvoiceNumber());
+        dispatch(loadInvoices());
         dispatch(loadItemMasters());
         dispatch(loadTaxMasters());
         dispatch(loadSalesPerson());
+        dispatch(loadCurrencies());
     }, [dispatch]);
+
+    //useEffect for exchangeRate
+    useEffect(() => {
+        if (invoice.currency && invoice.currency !== "INR") {
+            dispatch(
+                loadExchangeRate({
+                    from: invoice.currency,
+                    to: "INR",
+                })
+            );
+        } else {
+            // optional: reset exchange rate for INR
+            dispatch(
+                updateInvoiceField({
+                    field: "exchangeRate",
+                    value: 1,
+                })
+            );
+        }
+    }, [invoice.currency, dispatch]);
+
+
+    useEffect(() => {
+        console.log("salesPersonId changed:", invoice.salesPersonId);
+    }, [invoice.salesPersonId]);
 
     //useEffect for handleClick enable/disable
 
@@ -246,6 +318,12 @@ export default function NewInvoiceFull() {
             if (saveMenuRef.current && !saveMenuRef.current.contains(e.target)) {
                 dispatch(setShowSaveMenu(false));
             }
+
+            if (currencyDropdownRef.current && !currencyDropdownRef.current.contains(e.target)) {
+                dispatch(setShowSaveMenu(false));
+            }
+
+
         };
 
         document.addEventListener("mousedown", handleClickOutside);
@@ -263,10 +341,12 @@ export default function NewInvoiceFull() {
 
 
     //total block calc
-    const subtotal = useSelector(selectSubTotal);
-    const discount = useSelector(selectDiscountAmount);
-    const tax = useSelector(selectTaxAmount);
-    const total = useSelector(selectGrandTotal);
+    const subTotal = useSelector(selectSubTotal);
+    const discountAmount = useSelector(selectDiscountAmount);
+    const taxAmount = useSelector(selectTaxAmount);
+    const tdsAmount = useSelector(selectTdsAmount);
+    const tcsAmount = useSelector(selectTcsAmount);
+    const grandTotal = useSelector(selectGrandTotal);
 
 
 
@@ -298,11 +378,72 @@ export default function NewInvoiceFull() {
         dispatch(setDueDate(invoiceDate.toISOString().split("T")[0]));
     };
 
+    const handleSave = async (invoiceStatus) => {
+        console.log("========== SAVE ==========");
 
-    //handleSave
+        const errors = validateInvoice(invoice);
 
-    const handleSave = async () => {
-        console.log("Save Invoice");
+        dispatch(setErrors(errors));
+
+        if (Object.keys(errors).length > 0) {
+            return;
+        }
+
+        const payload = {
+            invoiceDate: invoice.invoiceDate,
+            dueDate: invoice.dueDate,
+            subject: invoice.subject,
+            customerNotes: invoice.customerNotes,
+            terms: invoice.terms,
+            orderNumber: invoice.orderNumber,
+            referenceNumber: invoice.referenceNumber,
+            currency: invoice.currency,
+            customerId: invoice.customerId,
+            salesPersonId: invoice.salesPersonId,
+            shippingCharges: invoice.shippingCharges,
+            adjustment: invoice.adjustment,
+            invoiceStatus,
+
+            items: invoice.invoiceItems.map(item => ({
+                itemId: item.itemId,
+                quantity: Number(item.quantity),
+                rate: Number(item.rate),
+                discount: Number(item.discount),
+                taxPercent: Number(item.taxPercent),
+            })),
+        };
+        console.log("Payload:", JSON.stringify(payload, null, 2));
+        try {
+            const savedInvoice = await dispatch(addInvoice(payload)).unwrap();
+
+            console.log("Saved Invoice:", savedInvoice);
+
+            dispatch(resetDirty());
+            dispatch(resetInvoice());
+
+            const successMessages = {
+                ACTIVE: "Invoice created successfully.",
+                DRAFT: "Invoice saved as draft.",
+                INACTIVE: "Invoice removed successfully.",
+            };
+
+            toast.success(successMessages[invoiceStatus]);
+
+            navigate("/invoices");
+        } catch (error) {
+            console.error(error);
+            const errorMessages = {
+                ACTIVE: "Failed to create invoice.",
+                DRAFT: "Failed to save draft.",
+                INACTIVE: "Failed to remove invoice.",
+            };
+
+            toast.error(errorMessages[invoiceStatus]);
+        }
+    };
+
+    const handleSaveClick = () => {
+        handleSave("ACTIVE");
     };
 
     //handleSaveAndNew
@@ -317,90 +458,53 @@ export default function NewInvoiceFull() {
 
     //handleSaveAsDraft
     const handleSaveAsDraft = async () => {
-        console.log("Save Invoice as Draft");
+        const errors = validateInvoice(invoice);
+        dispatch(setErrors(errors));
+
+        if (Object.keys(errors).length > 0) {
+            return;
+        }
+
+        try {
+            const savedInvoice = await dispatch(
+                addInvoice({
+                    ...invoice,
+                    invoiceStatus: "DRAFT",
+                })
+            ).unwrap();
+
+            dispatch(resetDirty());
+            dispatch(resetInvoice());
+
+            toast.success("Invoice saved as draft.");
+
+            navigate(`/sales/invoices/${savedInvoice.id}`);
+
+        } catch (error) {
+            toast.error(error?.message || "Failed to save draft.");
+        }
     };
 
     //handleUpdate
-    const handleUpdate = async () => {
+    const handleSaveAndPrint = async () => {
         console.log("Update Invoice");
     };
 
-    //handlePreview
-    const handlePreview = () => {
-        console.log("Preview Invoice");
+
+    //handleUpdate
+    const handleSaveAndShare = async () => {
+        console.log("handleSaveAndShare  Invoice");
     };
 
-    //handlePrint
-    const handlePrint = () => {
-        window.print();
+    // handleSaveAndSendLater 
+    const handleSaveAndSendLater = async () => {
+        console.log("handleSaveAndSendLater  Invoice");
     };
 
-    //handleDownloadPdf
-    const handleDownloadPdf = async () => {
-        console.log("Download Invoice PDF");
+    // handleCancel 
+    const handleCancel = async () => {
+        console.log("handleCancel  Invoice");
     };
-
-    //handleEmail
-    const handleEmail = async () => {
-        console.log("Email Invoice");
-    };
-
-    //handleShare
-    const handleShare = async () => {
-        console.log("Share Invoice");
-    };
-
-    //handleDuplicate
-    const handleDuplicate = () => {
-        console.log("Duplicate Invoice");
-    };
-
-    //handleDelete
-    const handleDelete = async () => {
-        const confirmed = window.confirm(
-            "Are you sure you want to delete this invoice?"
-        );
-
-        if (!confirmed) return;
-
-        console.log("Delete Invoice");
-    };
-
-    const handleMarkAsSent = async () => {
-        console.log("Mark Invoice as Sent");
-    };
-
-    const handleMarkAsPaid = async () => {
-        console.log("Mark Invoice as Paid");
-    };
-
-    const handleVoid = async () => {
-        const confirmed = window.confirm(
-            "Are you sure you want to void this invoice?"
-        );
-
-        if (!confirmed) return;
-
-        console.log("Void Invoice");
-    };
-
-    const handleCancelInvoice = async () => {
-        const confirmed = window.confirm(
-            "Are you sure you want to cancel this invoice?"
-        );
-
-        if (!confirmed) return;
-
-        console.log("Cancel Invoice");
-    };
-
-    const handleCancel = () => {
-        navigate("/invoice");
-    };
-
-
-
-
 
 
 
@@ -630,7 +734,7 @@ export default function NewInvoiceFull() {
 
                         {/* Currency */}
 
-                        <div className="flex items-center mb-4">
+                        {/* <div className="flex items-center mb-4">
                             <label className="w-44 text-sm font-medium shrink-0">
                                 Currency
                             </label>
@@ -667,9 +771,138 @@ export default function NewInvoiceFull() {
 
                             </div>
 
-                        )}
+                        )} */}
 
 
+
+                        {/* Currency */}
+
+                        <div className="flex items-center mb-4">
+                            <label className="w-44 text-sm font-medium text-gray-700 shrink-0 flex items-center">
+                                Currency
+                                <span className="ml-1 inline-block w-2 h-2 bg-blue-500 rounded-full" />
+                            </label>
+
+                            <div className="flex gap-2 w-[550px]">
+
+                                <div ref={currencyDropdownRef} className="relative flex-1">
+
+                                    <input
+                                        type="text"
+                                        value={currencySearch}
+                                        placeholder="Select currency"
+                                        onClick={() =>
+                                            dispatch(setOpenCurrency(!openCurrency))
+                                        }
+                                        onChange={(e) =>
+                                            dispatch(setCurrencySearch(e.target.value))
+                                        }
+                                        className="w-full border border-blue-500 rounded px-3 py-2 text-sm"
+                                    />
+
+                                    <ChevronDown
+                                        size={14}
+                                        className="absolute right-3 top-3 text-gray-400"
+                                    />
+
+
+                                    {openCurrency && (
+                                        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-lg shadow-lg z-50">
+
+                                            {/* Search */}
+                                            <div className="p-2 border border-gray-200">
+                                                <div className="relative">
+
+                                                    <Search
+                                                        size={16}
+                                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                    />
+
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Search currency"
+                                                        value={currencySearch}
+                                                        onChange={(e) =>
+                                                            dispatch(
+                                                                setCurrencySearch(e.target.value)
+                                                            )
+                                                        }
+                                                        className="w-full border border-blue-300 rounded pl-10 pr-3 py-2 text-sm"
+                                                    />
+
+                                                </div>
+                                            </div>
+
+
+                                            {/* Currency List */}
+                                            <div className="max-h-60 overflow-y-auto">
+
+                                                {filteredCurrencies.map(([code, name]) => (
+                                                    <button
+                                                        key={code}
+                                                        onClick={() => {
+
+                                                            dispatch(
+                                                                setCurrency(code)
+                                                            );
+
+                                                            dispatch(
+                                                                setCurrencySearch(code)
+                                                            );
+
+                                                            dispatch(
+                                                                setOpenCurrency(false)
+                                                            );
+
+                                                            // load exchange rate
+                                                            if (code !== "INR") {
+                                                                dispatch(
+                                                                    loadExchangeRate({
+                                                                        from: code,
+                                                                        to: "INR"
+                                                                    })
+                                                                );
+                                                            }
+
+                                                        }}
+                                                        className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
+                                                    >
+
+                                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-medium">
+                                                            {code.charAt(0)}
+                                                        </div>
+
+                                                        <div>
+                                                            <p className="font-medium">
+                                                                {code}
+                                                            </p>
+
+                                                            <p className="text-xs opacity-80">
+                                                                {name}
+                                                            </p>
+                                                        </div>
+
+                                                    </button>
+                                                ))}
+
+                                            </div>
+
+                                        </div>
+                                    )}
+
+                                </div>
+
+
+                                <button
+                                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded"
+                                >
+                                    <Search size={15} />
+                                </button>
+
+                            </div>
+                        </div>
+
+                        {/* .... */}
                         {/* Sales person */}
                         <div className="flex items-center mb-4">
                             <label className="w-44 text-sm font-medium text-red-500 shrink-0 flex items-center">
@@ -723,11 +956,12 @@ export default function NewInvoiceFull() {
                                                     <button
                                                         key={salesPerson.id}
                                                         onClick={() => {
+                                                            console.log("Selected Sales Person:", salesPerson);
+
+                                                            dispatch(setSalesPersonId(salesPerson.id));
                                                             dispatch(setSalesPersonName(salesPerson.salesPersonName));
                                                             dispatch(setSalesPersonSearch(salesPerson.salesPersonName));
                                                             dispatch(setOpenSalesPerson(false));
-
-                                                            dispatch(setCustomerId(salesPerson.id));
                                                         }}
                                                         className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
                                                     >
@@ -1156,7 +1390,7 @@ export default function NewInvoiceFull() {
                                     {/* Sub Total */}
                                     <div className="flex items-center justify-between text-sm font-semibold mb-5">
                                         <span>Sub Total</span>
-                                        <span>{fmt(subtotal)}</span>
+                                        <span>{fmt(subTotal)}</span>
                                     </div>
 
                                     {/* Discount */}
@@ -1190,7 +1424,48 @@ export default function NewInvoiceFull() {
                                         </div>
 
                                         <div className="w-20 text-right">
-                                            {fmt(discount)}
+                                            -{fmt(discountAmount)}
+                                        </div>
+
+                                    </div>
+
+
+
+                                    {/* GST */}
+                                    <div className="flex items-center justify-between mb-5">
+
+                                        <div className="w-32">
+                                            <span className="text-sm text-gray-700">GST</span>
+                                        </div>
+
+                                        <div className="w-32">
+                                            <div className="flex border border-gray-300 rounded-md overflow-hidden">
+
+                                                <input
+                                                    type="number"
+                                                    placeholder="GST %"
+                                                    value={invoice.taxAmount ?? ""}
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+
+                                                        dispatch(
+                                                            updateInvoiceField({
+                                                                field: "taxAmount",
+                                                                value: value === "" ? null : Number(value),
+                                                            })
+                                                        );
+                                                    }}
+                                                    className="w-full px-2 py-2 text-right outline-none"
+                                                />
+
+                                                <div className="px-3 flex items-center border-l border-gray-300 bg-gray-50 text-gray-600">
+                                                    %
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="w-20 text-right">
+                                            -{fmt(taxAmount)}
                                         </div>
 
                                     </div>
@@ -1247,7 +1522,7 @@ export default function NewInvoiceFull() {
                                         </div>
 
                                         <div className="w-20 text-right text-gray-600">
-                                            - {fmt(tax)}
+                                            - {fmt(tdsAmount)}
                                         </div>
 
                                     </div>
@@ -1262,7 +1537,7 @@ export default function NewInvoiceFull() {
                                         </span>
 
                                         <span className="text-2xl text-gray-700">
-                                            {fmt(total)}
+                                            {fmt(grandTotal)}
                                         </span>
 
                                     </div>
@@ -1335,22 +1610,12 @@ export default function NewInvoiceFull() {
 
 
                             <BottomActionBarInvoice
-                                onSave={handleSave}
-                                onSaveAndNew={handleSaveAndNew}
-                                onSaveAndSend={handleSaveAndSend}
+                                onSave={handleSaveClick}
                                 onSaveAsDraft={handleSaveAsDraft}
-                                onUpdate={handleUpdate}
-                                onPreview={handlePreview}
-                                onPrint={handlePrint}
-                                onDownloadPdf={handleDownloadPdf}
-                                onEmail={handleEmail}
-                                onShare={handleShare}
-                                onDuplicate={handleDuplicate}
-                                onDelete={handleDelete}
-                                onMarkAsSent={handleMarkAsSent}
-                                onMarkAsPaid={handleMarkAsPaid}
-                                onVoid={handleVoid}
-                                onCancelInvoice={handleCancelInvoice}
+                                onSaveAndSend={handleSaveAndSend}
+                                onSaveAndPrint={handleSaveAndPrint}
+                                onSaveAndShare={handleSaveAndShare}
+                                onSaveAndSendLater={handleSaveAndSendLater}
                                 onCancel={handleCancel}
 
 
@@ -1361,14 +1626,14 @@ export default function NewInvoiceFull() {
                                     <div className="text-sm font-semibold text-gray-800">
                                         Total Amount:
                                         <span className="ml-3 text-lg font-bold text-gray-900">
-                                            ₹ {fmt(total)}
+                                            ₹ {fmt(grandTotal)}
                                         </span>
                                     </div>
 
                                     <div className="text-sm text-gray-500">
                                         Total Quantity:
                                         <span className="ml-3 font-medium">
-                                            {itemMasters.reduce(
+                                            {invoiceItems.reduce(
                                                 (sum, item) => sum + Number(item.quantity || 0),
                                                 0
                                             )}

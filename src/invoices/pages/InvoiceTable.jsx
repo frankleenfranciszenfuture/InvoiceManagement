@@ -90,8 +90,8 @@ export default function InvoiceTable() {
                                 "Invoice Date",
                                 "Due Date",
                                 "Sales Person",
-                                "Subtotal",
-                                "Tax",
+                                // "Subtotal",
+                                // "Tax",
                                 "Total",
                                 "Items",
                                 "Status",
@@ -114,7 +114,8 @@ export default function InvoiceTable() {
                                 key={invoice.id}
                                 onClick={() => {
                                     dispatch(setSelectedInvoice(invoice));
-                                    navigate(`/invoices/${invoice.id}`);
+                                    navigate(`/invoices/view/${invoice.id}`);
+
                                 }}
                                 className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${idx % 2 === 1 ? "bg-gray-50/40" : ""
                                     }`}
@@ -173,16 +174,16 @@ export default function InvoiceTable() {
 
                                 {/* SubTotal */}
 
-                                <td className="px-5 py-3">
+                                {/* <td className="px-5 py-3">
                                     ₹
                                     {Number(invoice.subTotal || 0).toLocaleString()}
-                                </td>
+                                </td> */}
 
                                 {/* Tax */}
-                                <td className="px-5 py-3">
+                                {/* <td className="px-5 py-3">
                                     ₹
-                                    {Number(invoice.taxAmount || 0).toLocaleString()}
-                                </td>
+                                    {Number(invoice.taxPercent || 0).toLocaleString()}
+                                </td> */}
 
                                 {/* Total */}
                                 <td className="px-5 py-3 font-semibold">

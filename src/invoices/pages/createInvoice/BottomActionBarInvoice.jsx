@@ -7,7 +7,8 @@ import { ChevronUp, FileSpreadsheet, Mail, UploadCloud } from 'lucide-react';
 
 export default function BottomActionBarInvoice
     ({
-        onSaveDraft,
+        onSave,
+        onSaveAsDraft,
         onSaveAndSend,
         onSaveAndPrint,
         onSaveAndShare,
@@ -50,7 +51,7 @@ export default function BottomActionBarInvoice
             {/* Left Side - Buttons */}
             <div className="flex items-center gap-3">
                 <button
-                    onClick={onSaveDraft}
+                    onClick={onSaveAsDraft}
                     className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium"
                 >
 
@@ -61,7 +62,10 @@ export default function BottomActionBarInvoice
                 <div ref={saveMenuRef} className="relative flex items-center">
 
 
-                    <button className="bg-blue-500 text-white px-4 h-10 rounded-l">
+                    <button
+                        onClick={onSave}
+                        className="bg-blue-500 text-white px-4 h-10 rounded-l"
+                    >
                         Save and Send
                     </button>
 
@@ -74,24 +78,36 @@ export default function BottomActionBarInvoice
 
                     {showSaveMenu && (
                         <div className="absolute bottom-full left-0 mb-2 w-56 bg-white border border-gray-200 rounded-lg shadow-xl overflow-hidden z-50">
-                            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
+                            <button
+                                onClick={onSaveAndPrint}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
+                            >
                                 <FileSpreadsheet size={16} />
                                 Save and Print
                             </button>
 
-                            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
+                            <button
+                                onClick={onSaveAndShare}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
+                            >
                                 <UploadCloud size={16} />
                                 Save and Share
                             </button>
 
-                            <button className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left">
+                            <button
+                                onClick={onSaveAndSendLater}
+                                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
+                            >
                                 <Mail size={16} />
                                 Save and Send Later
                             </button>
                         </div>
                     )}
                 </div>
-                <button className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium">
+                <button
+                    onClick={onCancel}
+                    className="border border-gray-300 text-gray-700 text-sm px-5 py-2 rounded hover:bg-gray-100 font-medium"
+                >
                     Cancel
                 </button>
             </div>
