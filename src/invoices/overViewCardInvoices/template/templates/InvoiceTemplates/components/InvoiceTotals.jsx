@@ -1,67 +1,100 @@
 import React from "react";
+import useSelectedInvoice from "../../../templates/InvoiceTemplates/hooks/useSelectedInvoice";
+import { formatCurrency } from "../../../../../utils/formatCurrency";
 
-export default function InvoiceTotals({ invoice }) {
-    const currencyCode = invoice?.currency || "INR";
+export default function InvoiceTotals() {
 
-    const formatCurrency = (amount) =>
-        new Intl.NumberFormat("en-IN", {
-            style: "currency",
-            currency: currencyCode,
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 2,
-        }).format(Number(amount || 0));
+    const invoice = useSelectedInvoice();
+
+    const currency = invoice?.currency || "INR";
+
+    const subTotal = Number(invoice?.subTotal || 0);
+    const discount = Number(invoice?.discountAmount || 0);
+    const tax = Number(invoice?.taxAmount || 0);
+    const shipping = Number(invoice?.shippingCharges || 0);
+    const adjustment = Number(invoice?.adjustment || 0);
+    const total = Number(invoice?.totalAmount || 0);
+    const paid = Number(invoice?.paidAmount || 0);
+    const balance = total - paid;
+
+    const Row = ({ label, value, bold = false }) => (
+        <div className="flex items-center justify-between py-2">
+            <span
+                className={`${bold
+                    ? "font-semibold text-gray-900"
+                    : "text-gray-600"
+                    }`}
+            >
+                {label}
+            </span>
+
+            <span
+                className={`${bold
+                    ? "font-semibold text-gray-900"
+                    : "text-gray-700"
+                    }`}
+            >
+                {formatCurrency(value, currency)}
+            </span>
+        </div>
+    );
 
     return (
-        <div className="w-full max-w-md rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-6 py-4">
-                <h3 className="text-lg font-semibold text-gray-900">
+        <div className="mt-8 ml-auto w-[420px] rounded-xl border border-gray-200 bg-white shadow-sm">
+
+            <div className="border-b bg-gray-50 px-6 py-4">
+                <h2 className="text-lg font-semibold text-gray-800">
                     Invoice Summary
-                </h3>
+                </h2>
             </div>
 
-            <div className="space-y-3 px-6 py-5">
+            <div className="space-y-1 px-6 py-5">
 
-                <div className="flex justify-between">
-                    <span className="text-gray-600">Sub Total</span>
-                    <span className="font-medium">
-                        {formatCurrency(invoice?.subTotal)}
-                    </span>
-                </div>
+                <Row
+                    label="Sub Total"
+                    value={subTotal}
+                />
 
-                <div className="flex justify-between">
-                    <span className="text-gray-600">Discount</span>
-                    <span className="font-medium">
-                        {formatCurrency(invoice?.discountAmount)}
-                    </span>
-                </div>
+                <Row
+                    label="Discount"
+                    value={discount}
+                />
 
-                <div className="flex justify-between">
-                    <span className="text-gray-600">Tax</span>
-                    <span className="font-medium">
-                        {formatCurrency(invoice?.taxAmount)}
-                    </span>
-                </div>
+                <Row
+                    label="Tax"
+                    value={tax}
+                />
 
-                <div className="flex justify-between">
-                    <span className="text-gray-600">Shipping Charges</span>
-                    <span className="font-medium">
-                        {formatCurrency(invoice?.shippingCharges)}
-                    </span>
-                </div>
+                <Row
+                    label="Shipping Charges"
+                    value={shipping}
+                />
 
-                <div className="flex justify-between">
-                    <span className="text-gray-600">Adjustment</span>
-                    <span className="font-medium">
-                        {formatCurrency(invoice?.adjustment)}
-                    </span>
-                </div>
+                <Row
+                    label="Adjustment"
+                    value={adjustment}
+                />
 
-                <hr className="border-gray-300" />
+                <hr className="my-3" />
 
-                <div className="flex justify-between text-xl font-bold text-blue-700">
-                    <span>Total</span>
-                    <span>{formatCurrency(invoice?.totalAmount)}</span>
-                </div>
+                <Row
+                    label="Grand Total"
+                    value={total}
+                    bold
+                />
+
+                <hr className="my-3" />
+
+                <Row
+                    label="Paid Amount"
+                    value={paid}
+                />
+
+                <Row
+                    label="Balance Due"
+                    value={balance}
+                    bold
+                />
 
             </div>
         </div>

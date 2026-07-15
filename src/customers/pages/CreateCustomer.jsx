@@ -113,14 +113,14 @@ const AddressColumn = ({
                     <button
                         type="button"
                         onClick={() => dispatch(copyBillingToShipping())}
-                        className="text-blue-600 hover:underline text-sm"
+                        className="text-blue-600 focus-within:border-blue-400 hover:underline text-sm"
                     >
                         Copy billing address
                     </button>
                 )}
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-4 ">
 
                 {/* Attention */}
                 <div className="grid grid-cols-[110px_1fr] items-center">
@@ -130,7 +130,7 @@ const AddressColumn = ({
                         type="text"
                         value={safeAddress.attention}
                         onChange={handleAddrChange("attention")}
-                        className="w-full border rounded px-2 py-1.5"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5"
                     />
                 </div>
 
@@ -142,7 +142,7 @@ const AddressColumn = ({
                         <select
                             value={safeAddress.country}
                             onChange={handleAddrChange("country")}
-                            className={`w-full rounded px-3 py-2 border ${errors.country
+                            className={`w-full rounded px-3 py-2 border border-gray-300 ${errors.country
                                 ? "border-red-500 bg-red-50"
                                 : "border-gray-300"
                                 }`}
@@ -156,7 +156,7 @@ const AddressColumn = ({
                             ))}
                         </select>
 
-                        <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" />
+                        {/* <ChevronDown className="w-4 h-4 absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none" /> */}
                     </div>
                 </div>
 
@@ -170,7 +170,7 @@ const AddressColumn = ({
                             placeholder="address"
                             value={safeAddress.address}
                             onChange={handleAddrChange("address")}
-                            className="w-full border rounded px-2 py-1.5"
+                            className="w-full border border-gray-300 rounded px-2 py-1.5"
                         />
 
 
@@ -184,7 +184,7 @@ const AddressColumn = ({
                     <input
                         value={safeAddress.city}
                         onChange={handleAddrChange("city")}
-                        className="w-full border rounded px-2 py-1.5"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5"
                     />
                 </div>
 
@@ -196,7 +196,7 @@ const AddressColumn = ({
                         <select
                             value={safeAddress.state}
                             onChange={handleAddrChange("state")}
-                            className="w-full border rounded px-2 py-1.5 appearance-none"
+                            className="w-full border border-gray-300 rounded px-2 py-1.5 appearance-none"
                         >
                             <option value="">Select State</option>
                             <option value="Tamil Nadu">Tamil Nadu</option>
@@ -215,7 +215,7 @@ const AddressColumn = ({
                     <input
                         value={safeAddress.zipCode}
                         onChange={handleAddrChange("zipCode")}
-                        className="w-full border rounded px-2 py-1.5"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5"
                     />
                 </div>
 
@@ -223,11 +223,11 @@ const AddressColumn = ({
                 <div className="grid grid-cols-[110px_1fr] items-center">
                     <Label>Phone</Label>
 
-                    <div className="flex border rounded overflow-hidden">
+                    <div className="flex border border-gray-300 rounded overflow-hidden">
                         <select
                             value={safeAddress.phoneCode}
                             onChange={handleAddrChange("phoneCode")}
-                            className="border-r px-2"
+                            className="border-r border-gray-300 px-2"
                         >
                             <option value="+91">+91</option>
                             <option value="+1">+1</option>
@@ -249,7 +249,7 @@ const AddressColumn = ({
                     <input
                         value={safeAddress.fax}
                         onChange={handleAddrChange("fax")}
-                        className="w-full border rounded px-2 py-1.5"
+                        className="w-full border border-gray-300 rounded px-2 py-1.5"
                     />
                 </div>
 
@@ -486,6 +486,7 @@ export default function CreateCustomer() {
     const handleCancel = () => {
         dispatch(resetDirty());
         dispatch(closeModal());
+        navigate("/customers");
     };
 
     const handleDelete = async (id) => {

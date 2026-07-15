@@ -10,8 +10,12 @@ import { loadItemMasters } from "../../../slices/itemMasters/thunks/itemMasterTh
 import { loadTaxMasters, getTaxMasterByType } from "../../../slices/invoices/tax/thunks/taxMasterThunks";
 import { loadSalesPerson } from "../../../slices/salesPerson/thunks/salesPersonThunks";
 import { loadCurrencies, loadExchangeRate } from "../../../slices/invoices/currency/thunks/currencyThunks"
-
+import { closeModal } from "../../../slices/Ui/uiSlice";
 import { validateInvoice } from "../../../invoices/utils/validateInvoice";
+
+import { formatCurrency } from "../../../invoices/utils/formatCurrency";
+
+
 import {
     // customer related inside invoice
     toggleSimplifiedView,
@@ -69,6 +73,7 @@ import {
     setOpenCurrency,
     selectFilteredCurrencies,
     setCurrencySearch,
+    setCustomerCurrency,
 
 
     //errors
@@ -130,6 +135,20 @@ export default function NewInvoiceFull() {
     const openCustomer = useSelector(
         (state) => state.invoice.openCustomer
     );
+
+    //customer section , right toggle customerDetaisl
+    const customerName = useSelector(
+        (state) => state.invoice.customerName
+    );
+
+    const customerDetailsTitle = customerName
+        ? customerName.endsWith("s") || customerName.endsWith("S")
+            ? `${customerName}' Details`
+            : `${customerName}'s Details`
+        : "Customer Details";
+
+    const { customerCurrency } = useSelector((state) => state.invoice);
+
 
     const filteredCustomers = useMemo(() => {
         return customers.filter((customer) =>
@@ -233,9 +252,10 @@ export default function NewInvoiceFull() {
     //exchangeRate, currency
 
     const {
-        exchangeRate,
+
         currencies,
         loadingExchangeRate,
+        currency,
     } = useSelector((state) => state.invoice);
 
     //currencyDropDown
@@ -253,6 +273,27 @@ export default function NewInvoiceFull() {
     //filterCurrency
     const filteredCurrencies = useSelector(selectFilteredCurrencies);
 
+    const exchangeRate = useSelector(
+        (state) => state.invoice.exchangeRate
+    );
+
+    // const invoiceCurrency = useSelector(
+    //     (state) => state.invoice.currency
+    // );
+
+    // const convertedRate =
+    //     currency === "INR"
+    //         ? itemMasters.sellingPrice
+    //         : itemMasters.sellingPrice / exchangeRate;
+
+    const displayPrice =
+        currency === "INR"
+            ? itemMasters.sellingPrice
+            : itemMasters.sellingPrice / exchangeRate.rate;
+
+
+    //isDirty
+
     // useEffect for dispatch values
     useEffect(() => {
         dispatch(loadCustomers());
@@ -269,12 +310,11 @@ export default function NewInvoiceFull() {
         if (invoice.currency && invoice.currency !== "INR") {
             dispatch(
                 loadExchangeRate({
-                    from: invoice.currency,
-                    to: "INR",
+                    from: "INR",
+                    to: invoice.currency,
                 })
             );
         } else {
-            // optional: reset exchange rate for INR
             dispatch(
                 updateInvoiceField({
                     field: "exchangeRate",
@@ -288,6 +328,36 @@ export default function NewInvoiceFull() {
     useEffect(() => {
         console.log("salesPersonId changed:", invoice.salesPersonId);
     }, [invoice.salesPersonId]);
+
+
+    //useEffect for change customer show rate rest
+    useEffect(() => {
+
+        if (!invoiceItems || invoiceItems.length === 0) return;
+
+        invoiceItems.forEach((item) => {
+
+            if (item.itemId && item.sellingPrice) {
+
+                const newRate =
+                    currency === "INR"
+                        ? Number(item.sellingPrice)
+                        : Number(item.sellingPrice) *
+                        Number(exchangeRate?.exchangeRate || 1);
+
+
+                dispatch(
+                    updateItem({
+                        id: item.id,
+                        field: "rate",
+                        value: newRate,
+                    })
+                );
+            }
+
+        });
+
+    }, [currency, exchangeRate]);
 
     //useEffect for handleClick enable/disable
 
@@ -397,19 +467,30 @@ export default function NewInvoiceFull() {
             terms: invoice.terms,
             orderNumber: invoice.orderNumber,
             referenceNumber: invoice.referenceNumber,
+
             currency: invoice.currency,
+            exchangeRate:
+                invoice.currency === "INR"
+                    ? 1
+                    : exchangeRate?.exchangeRate,
+
             customerId: invoice.customerId,
             salesPersonId: invoice.salesPersonId,
+
             shippingCharges: invoice.shippingCharges,
             adjustment: invoice.adjustment,
+
             invoiceStatus,
 
             items: invoice.invoiceItems.map(item => ({
                 itemId: item.itemId,
-                quantity: Number(item.quantity),
-                rate: Number(item.rate),
-                discount: Number(item.discount),
-                taxPercent: Number(item.taxPercent),
+                quantity: Number(item.quantity ?? 0),
+                rate: Number(item.rate ?? 0),
+                discount: Number(item.discount ?? 0),
+                taxPercent:
+                    invoice.currency === "INR"
+                        ? Number(item.taxPercent || 0)
+                        : 0,
             })),
         };
         console.log("Payload:", JSON.stringify(payload, null, 2));
@@ -502,13 +583,30 @@ export default function NewInvoiceFull() {
     };
 
     // handleCancel 
-    const handleCancel = async () => {
-        console.log("handleCancel  Invoice");
+    const handleCancel = () => {
+        dispatch(resetDirty());
+        dispatch(closeModal());
+        navigate("/invoices");
     };
 
 
+    const convertItemRate = (sellingPrice) => {
+        const price = Number(sellingPrice) || 0;
 
+        console.log("Conversion Debug:", {
+            invoiceCurrency: invoice.currency,
+            sellingPrice: price,
+            exchangeRate: exchangeRate,
+        });
 
+        if (!invoice.currency || invoice.currency === "INR") {
+            return price;
+        }
+
+        const rate = Number(exchangeRate?.exchangeRate) || 1;
+
+        return price * rate;
+    };
     return (
         <div className="flex h-full bg-gray-50 font-sans text-[13px] overflow-hidden">
             {/* Form Container Wrapper allowing separate inner scrolling */}
@@ -571,103 +669,215 @@ export default function NewInvoiceFull() {
                 {/* Body */}
 
                 <div className="flex-1 overflow-y-auto px-3 py-2">
-                    {/* Customer Name */}
-                    <div className="flex items-center mb-6">
-                        <div className="px-2 bg-gray-100 w-full h-[100px] flex items-center ">
-                            <label className="w-44 text-sm font-medium text-red-500 shrink-0 flex items-center">
-                                Customer Name<span>*</span>
-                                <span className="ml-1 inline-block w-2 h-2 bg-blue-500 rounded-full" />
-                            </label>
 
-                            <div className="flex gap-2 w-[550px]">
-                                <div ref={customerDropdownRef} className="relative flex-1">
-                                    <input
-                                        type="text"
-                                        value={customerSearch}
-                                        placeholder="Select or add a customer"
-                                        onClick={() => dispatch(setOpenCustomer(!openCustomer))}
-                                        onChange={(e) =>
-                                            dispatch(setCustomerSearch(e.target.value))
-                                        }
-                                        className="w-full border border-blue-500 rounded px-3 py-2 text-sm"
-                                    />
+                    {/* Customer Section */}
 
-                                    <ChevronDown
-                                        size={14}
-                                        className="absolute right-3 top-3 text-gray-400"
-                                    />
+                    <div className="bg-gray-100 border border-gray-100 rounded-md px-4 py-6 mb-6">
 
-                                    {openCustomer && (
-                                        <div className="absolute top-full left-0 mt-2 w-full bg-white border border-gray-100 rounded-lg shadow-lg z-50">
-                                            {/* Search Box */}
-                                            <div className="p-2 border border-gray-200">
-                                                <div className="relative">
-                                                    <Search
-                                                        size={16}
-                                                        className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                                                    />
-                                                    <input
-                                                        type="text"
-                                                        placeholder="Search"
-                                                        value={customerSearch}
-                                                        onChange={(e) =>
-                                                            dispatch(setCustomerSearch(e.target.value))
-                                                        }
-                                                        className="w-full border border-blue-300 rounded pl-10 pr-3 py-2 text-sm  cursor-pointer"
-                                                    />
+                        <div className="flex">
+
+                            {/* Left Label */}
+                            <div className="w-44 pt-2 shrink-0">
+                                <label className="text-sm font-medium text-red-500 flex items-center">
+                                    Customer Name<span>*</span>
+                                    <span className="ml-2 w-2 h-2 rounded-full bg-blue-500"></span>
+                                </label>
+                            </div>
+
+                            {/* Middle Section */}
+                            <div className="flex-1">
+
+                                {/* Customer Row */}
+                                <div className="flex items-center gap-3">
+
+                                    {/* Customer Dropdown */}
+                                    <div
+                                        ref={customerDropdownRef}
+                                        className="relative w-[610px]"
+                                    >
+                                        <input
+                                            type="text"
+                                            value={customerSearch}
+                                            placeholder="Select or add a customer"
+                                            onClick={() =>
+                                                dispatch(setOpenCustomer(!openCustomer))
+                                            }
+                                            onChange={(e) =>
+                                                dispatch(setCustomerSearch(e.target.value))
+                                            }
+                                            className="w-full h-10 border border-gray-300 rounded-md px-3 pr-10 text-sm"
+                                        />
+
+                                        <ChevronDown
+                                            size={16}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                                        />
+
+                                        {openCustomer && (
+                                            <div className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-md shadow-lg z-50">
+
+                                                {/* Search */}
+                                                <div className="p-2 border-b border-gray-200">
+                                                    <div className="relative">
+                                                        <Search
+                                                            size={16}
+                                                            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                                                        />
+
+                                                        <input
+                                                            type="text"
+                                                            value={customerSearch}
+                                                            onChange={(e) =>
+                                                                dispatch(setCustomerSearch(e.target.value))
+                                                            }
+                                                            placeholder="Search customer"
+                                                            className="w-full border border-gray-300 rounded-md pl-10 pr-3 py-2 text-sm"
+                                                        />
+                                                    </div>
                                                 </div>
-                                            </div>
-                                            {/* Customer List */}
-                                            <div className="max-h-60 overflow-y-auto">
-                                                {filteredCustomers.map((customer) => (
-                                                    <button
-                                                        key={customer.id}
-                                                        onClick={() => {
-                                                            dispatch(setCustomerId(customer.id));
-                                                            dispatch(setCustomerName(customer.displayName));
-                                                            dispatch(setCustomerSearch(customer.displayName));
-                                                            dispatch(setOpenCustomer(false));
-                                                        }}
-                                                        className="w-full flex items-center gap-3 rounded-lg px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
-                                                    >
-                                                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-medium">
-                                                            {customer.displayName?.charAt(0)}
-                                                        </div>
 
-                                                        <div>
-                                                            <p>{customer.displayName}</p>
+                                                {/* Customer List */}
+                                                <div className="max-h-64 overflow-y-auto">
+
+                                                    {filteredCustomers.map((customer) => (
+                                                        <button
+                                                            key={customer.id}
+                                                            onClick={() => {
+
+                                                                dispatch(setCustomerId(customer.id));
+
+                                                                dispatch(
+                                                                    setCustomerName(customer.displayName)
+                                                                );
 
 
-                                                            <p className="text-xs opacity-80">
-                                                                {customer.email}
-                                                            </p>
-                                                        </div>
-                                                    </button>
-                                                ))}
-                                            </div>
-                                            {/* Footer */}
-                                            <div className="flex items-center gap-2 flex-1 border border-gray-200  hover:bg-blue-100  cursor-pointer">
-                                                <div className="ml-3 mt-2 mb-2 px-3 py-2 h-7 rounded-full bg-blue-500 border border-gray-400 flex items-center justify-center flex-shrink-0">
-                                                    <Plus
-                                                        size={8}
-                                                        className="w-2 h-3 text-gray-100 font-bold"
-                                                    />
+                                                                const selectedCurrency =
+                                                                    customer.currency || "INR";
+
+
+                                                                // Update invoice currency
+                                                                dispatch(
+                                                                    updateInvoiceField({
+                                                                        field: "currency",
+                                                                        value: selectedCurrency,
+                                                                    })
+                                                                );
+
+
+                                                                // Update currency dropdown display
+                                                                dispatch(
+                                                                    setCurrencySearch(selectedCurrency)
+                                                                );
+
+
+                                                                dispatch(
+                                                                    setCustomerSearch(customer.displayName)
+                                                                );
+
+
+                                                                dispatch(
+                                                                    setOpenCustomer(false)
+                                                                );
+
+                                                            }}
+                                                            className="w-full flex gap-3 px-4 py-3 hover:bg-blue-500 hover:text-white text-left"
+                                                        >
+                                                            <div className="w-10 h-10 rounded-md bg-gray-200 flex items-center justify-center font-medium">
+                                                                {customer.displayName?.charAt(0)}
+                                                            </div>
+
+                                                            <div>
+                                                                <p>{customer.displayName}</p>
+                                                                <p className="text-xs  ">
+                                                                    {customer.email}
+                                                                </p>
+                                                            </div>
+                                                        </button>
+                                                    ))}
+
                                                 </div>
-                                                <div>
-                                                    <h2 className="text-sm font-medium text-blue-800 ">
+
+                                                {/* Footer */}
+                                                <div className="border-t px-4 py-3 flex items-center gap-3 hover:bg-blue-50 cursor-pointer">
+                                                    <div className="w-7 h-7 rounded-full bg-blue-500 flex items-center justify-center">
+                                                        <Plus
+                                                            size={12}
+                                                            className="text-white"
+                                                        />
+                                                    </div>
+
+                                                    <span className="text-sm font-medium text-blue-600">
                                                         New Customer
-                                                    </h2>
+                                                    </span>
                                                 </div>
+
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
+
+                                    {/* Search */}
+                                    <button className="w-10 h-10 rounded-md bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center">
+                                        <Search size={16} />
+                                    </button>
+
+                                    {/* Currency */}
+                                    <button className="h-10 border border-gray-300 rounded-md px-4 flex items-center gap-2">
+                                        💰
+                                        <span className="text-sm">{currency || "INR"}</span>
+                                    </button>
+
+                                    {/* Push Details to Right */}
+                                    <div className="flex-1 flex justify-end">
+
+                                        <button className="min-w-[220px] h-11 bg-slate-700 hover:bg-slate-800 text-white rounded-md px-5 flex items-center justify-between">
+
+                                            <span>
+                                                {customerName
+                                                    ? `${customerName}${customerName.endsWith("s") ||
+                                                        customerName.endsWith("S")
+                                                        ? "'"
+                                                        : "'s"
+                                                    } Details`
+                                                    : "Customer Details"}
+                                            </span>
+
+                                            <ChevronRight size={18} />
+
+                                        </button>
+
+                                    </div>
+
                                 </div>
 
-                                <button className="bg-blue-500 hover:bg-blue-600 text-white px-3 rounded">
-                                    <Search size={15} />
-                                </button>
+                                {/* Addresses */}
+                                <div className="flex mt-6">
+
+                                    <div className="w-[320px]">
+                                        <p className="text-gray-600 uppercase text-sm">
+                                            Billing Address
+                                        </p>
+
+                                        <button className="mt-2 text-blue-600 text-sm hover:underline">
+                                            New Address
+                                        </button>
+                                    </div>
+
+                                    <div className="w-[320px]">
+                                        <p className="text-gray-600 uppercase text-sm">
+                                            Shipping Address
+                                        </p>
+
+                                        <button className="mt-2 text-blue-600 text-sm hover:underline">
+                                            New Address
+                                        </button>
+                                    </div>
+
+                                </div>
+
                             </div>
+
                         </div>
+
                     </div>
 
                     {/* ...... */}
@@ -1228,69 +1438,93 @@ export default function NewInvoiceFull() {
                                                             >
                                                                 {" "}
                                                                 <div className="max-h-64 overflow-y-auto p-1">
+
                                                                     {filteredItems.length === 0 ? (
                                                                         <div className="p-3 text-gray-500">
                                                                             No items found
                                                                         </div>
                                                                     ) : (
-                                                                        filteredItems.map((itemMaster) => (
-                                                                            <div
-                                                                                key={itemMaster.id}
-                                                                                onClick={() => {
-                                                                                    dispatch(
-                                                                                        updateItem({
-                                                                                            id: item.id,
-                                                                                            updatedFields: {
-                                                                                                itemId: itemMaster.id,
-                                                                                                itemName: itemMaster.itemName,
-                                                                                                itemType: itemMaster.itemType,
-                                                                                                description:
-                                                                                                    itemMaster.description || itemMaster.itemName,
-                                                                                                sellingPrice: itemMaster.sellingPrice,
-                                                                                                purchasePrice: itemMaster.purchasePrice,
-                                                                                                rate: itemMaster.sellingPrice,
-                                                                                                unit: itemMaster.unit,
-                                                                                                selected: true,
-                                                                                            },
-                                                                                        })
-                                                                                    );
+                                                                        filteredItems.map((itemMaster) => {
 
-                                                                                    dispatch(setItemSearch(""));
-                                                                                    dispatch(setOpenRowItemDropdown(false));
-                                                                                    dispatch(setActiveItemId(null));
+                                                                            const convertedRate = convertItemRate(itemMaster.sellingPrice);
 
-                                                                                    // Add new row only if this is the last invoice row
-                                                                                    const isLastRow =
-                                                                                        item.id === invoiceItems[invoiceItems.length - 1]?.id;
+                                                                            return (
+                                                                                <div
+                                                                                    key={itemMaster.id}
+                                                                                    onClick={() => {
 
-                                                                                    if (isLastRow) {
-                                                                                        dispatch(addItem());
-                                                                                    }
-                                                                                }}
-                                                                                className="cursor-pointer rounded-md px-3 py-3 transition-all
-                                        hover:bg-blue-600  hover:text-white"
-                                                                            >
-                                                                                <div className="font-semibold uppercase group-hover:text-gray-200">
-                                                                                    {itemMaster.itemName}
-                                                                                </div>
+                                                                                        console.log({
+                                                                                            invoiceCurrency: invoice.currency,
+                                                                                            exchangeRate,
+                                                                                            originalPrice: itemMaster.sellingPrice,
+                                                                                            convertedRate,
+                                                                                        });
 
-                                                                                <div className="text-sm text-gray-500 group-hover:text-blue-100">
-                                                                                    ₹{itemMaster.sellingPrice}
-                                                                                </div>
+                                                                                        dispatch(
+                                                                                            updateItem({
+                                                                                                id: item.id,
+                                                                                                updatedFields: {
+                                                                                                    itemId: itemMaster.id,
+                                                                                                    itemName: itemMaster.itemName,
+                                                                                                    itemType: itemMaster.itemType,
 
-                                                                                <div className="text-xs text-gray-500 group-hover:text-blue-100">
-                                                                                    {itemMaster.unit}
-                                                                                </div>
+                                                                                                    description:
+                                                                                                        itemMaster.description ||
+                                                                                                        itemMaster.itemName,
 
-                                                                                {itemMaster.description && (
-                                                                                    <div className="text-xs opacity-70 mt-1 group-hover:text-blue-100">
-                                                                                        {itemMaster.description}
+                                                                                                    sellingPrice: itemMaster.sellingPrice,
+
+                                                                                                    rate: convertedRate,
+
+                                                                                                    purchasePrice: itemMaster.purchasePrice,
+                                                                                                    unit: itemMaster.unit,
+
+                                                                                                    selected: true,
+                                                                                                },
+                                                                                            })
+                                                                                        );
+
+                                                                                        dispatch(setItemSearch(""));
+                                                                                        dispatch(setOpenRowItemDropdown(false));
+                                                                                        dispatch(setActiveItemId(null));
+
+                                                                                        const isLastRow =
+                                                                                            item.id === invoiceItems[invoiceItems.length - 1]?.id;
+
+                                                                                        if (isLastRow) {
+                                                                                            dispatch(addItem());
+                                                                                        }
+                                                                                    }}
+
+                                                                                    className="cursor-pointer rounded-md px-3 py-3 transition-all hover:bg-blue-600 hover:text-white"
+                                                                                >
+
+                                                                                    <div className="font-semibold uppercase">
+                                                                                        {itemMaster.itemName}
                                                                                     </div>
-                                                                                )}
 
-                                                                            </div>
-                                                                        ))
+                                                                                    <div className="text-sm text-gray-500">
+                                                                                        {formatCurrency(
+                                                                                            convertedRate,
+                                                                                            invoice.currency
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    <div className="text-xs text-gray-500">
+                                                                                        {itemMaster.unit}
+                                                                                    </div>
+
+                                                                                    {itemMaster.description && (
+                                                                                        <div className="text-xs opacity-70 mt-1">
+                                                                                            {itemMaster.description}
+                                                                                        </div>
+                                                                                    )}
+
+                                                                                </div>
+                                                                            );
+                                                                        })
                                                                     )}
+
                                                                 </div>
                                                                 <div className="border-t px-4 py-3">
                                                                     <button className=" cursor-pointer flex items-center gap-2 text-blue-600">
@@ -1320,20 +1554,32 @@ export default function NewInvoiceFull() {
                                                 />
                                             </td>
                                             <td className="px-4 py-3">
-                                                <input
-                                                    type="number"
-                                                    value={safeNumber(item.rate)}
-                                                    onChange={(e) =>
-                                                        dispatch(
-                                                            updateItem({
-                                                                id: item.id,
-                                                                field: "rate",
-                                                                value: parseFloat(e.target.value),
-                                                            }),
-                                                        )
-                                                    }
-                                                    className="w-full text-right text-sm focus:outline-none bg-transparent border-b border-transparent focus:border-blue-400"
-                                                />
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <span className="text-sm text-gray-500">
+                                                        {new Intl.NumberFormat("en", {
+                                                            style: "currency",
+                                                            currency: invoice.currency,
+                                                            currencyDisplay: "narrowSymbol",
+                                                        })
+                                                            .formatToParts(0)
+                                                            .find((part) => part.type === "currency")?.value}
+                                                    </span>
+
+                                                    <input
+                                                        type="number"
+                                                        value={safeNumber(item.rate)}
+                                                        onChange={(e) =>
+                                                            dispatch(
+                                                                updateItem({
+                                                                    id: item.id,
+                                                                    field: "rate",
+                                                                    value: parseFloat(e.target.value) || 0,
+                                                                })
+                                                            )
+                                                        }
+                                                        className="w-24 text-right text-sm focus:outline-none bg-transparent border-b border-transparent focus:border-blue-400"
+                                                    />
+                                                </div>
                                             </td>
                                             <td className="px-4 py-3 text-right text-sm font-semibold text-gray-800">
                                                 {fmt(item.amount)}
@@ -1432,100 +1678,121 @@ export default function NewInvoiceFull() {
 
 
                                     {/* GST */}
-                                    <div className="flex items-center justify-between mb-5">
+                                    {currency === "INR" && (
+                                        <>
+                                            {/* GST */}
+                                            <div className="flex items-center justify-between mb-5">
 
-                                        <div className="w-32">
-                                            <span className="text-sm text-gray-700">GST</span>
-                                        </div>
-
-                                        <div className="w-32">
-                                            <div className="flex border border-gray-300 rounded-md overflow-hidden">
-
-                                                <input
-                                                    type="number"
-                                                    placeholder="GST %"
-                                                    value={invoice.taxAmount ?? ""}
-                                                    onChange={(e) => {
-                                                        const value = e.target.value;
-
-                                                        dispatch(
-                                                            updateInvoiceField({
-                                                                field: "taxAmount",
-                                                                value: value === "" ? null : Number(value),
-                                                            })
-                                                        );
-                                                    }}
-                                                    className="w-full px-2 py-2 text-right outline-none"
-                                                />
-
-                                                <div className="px-3 flex items-center border-l border-gray-300 bg-gray-50 text-gray-600">
-                                                    %
+                                                <div className="w-32">
+                                                    <span className="text-sm text-gray-700">
+                                                        GST
+                                                    </span>
                                                 </div>
+
+                                                <div className="w-32">
+                                                    <div className="flex border border-gray-300 rounded-md overflow-hidden">
+
+                                                        <input
+                                                            type="number"
+                                                            placeholder="GST %"
+                                                            value={invoice.taxAmount ?? ""}
+                                                            onChange={(e) => {
+                                                                const value = e.target.value;
+
+                                                                dispatch(
+                                                                    updateInvoiceField({
+                                                                        field: "taxAmount",
+                                                                        value: value === "" ? null : Number(value),
+                                                                    })
+                                                                );
+                                                            }}
+                                                            className="w-full px-2 py-2 text-right outline-none"
+                                                        />
+
+                                                        <div className="px-3 flex items-center border-l border-gray-300 bg-gray-50 text-gray-600">
+                                                            %
+                                                        </div>
+
+                                                    </div>
+                                                </div>
+
+                                                <div className="w-20 text-right">
+                                                    {fmt(taxAmount)}
+                                                </div>
+
                                             </div>
-                                        </div>
-
-                                        <div className="w-20 text-right">
-                                            -{fmt(taxAmount)}
-                                        </div>
-
-                                    </div>
+                                        </>
+                                    )}
 
                                     {/* TDS / TCS */}
-                                    <div className="flex items-center justify-between mb-5">
+                                    {currency === "INR" && (
+                                        <>
+                                            {/* TDS / TCS */}
+                                            <div className="flex items-center justify-between mb-5">
 
-                                        <div className="w-32 border-gray-200">
-                                            <TaxTypeSelector
-                                                value={invoice.salesType}
-                                                onChange={(value) => {
+                                                <div className="w-32 border-gray-200">
 
-                                                    dispatch(updateInvoiceField({
-                                                        field: "salesType",
-                                                        value,
-                                                    }));
+                                                    <TaxTypeSelector
+                                                        value={invoice.salesType}
+                                                        onChange={(value) => {
 
-                                                    dispatch(updateInvoiceField({
-                                                        field: "taxId",
-                                                        value: null,
-                                                    }));
+                                                            dispatch(updateInvoiceField({
+                                                                field: "salesType",
+                                                                value,
+                                                            }));
 
-                                                    dispatch(updateInvoiceField({
-                                                        field: "taxPercent",
-                                                        value: 0,
-                                                    }));
+                                                            dispatch(updateInvoiceField({
+                                                                field: "taxId",
+                                                                value: null,
+                                                            }));
 
-                                                    dispatch(getTaxMasterByType(value));
+                                                            dispatch(updateInvoiceField({
+                                                                field: "taxPercent",
+                                                                value: 0,
+                                                            }));
 
-                                                }}
-                                            />
-                                        </div>
+                                                            dispatch(getTaxMasterByType(value));
 
-                                        <div className="w-32">
-                                            <TaxDropdown
-                                                type={invoice.salesType}
-                                                taxes={taxes}
-                                                selectedTax={selectedTax}
-                                                onSelect={(tax) => {
+                                                        }}
+                                                    />
 
-                                                    dispatch(updateInvoiceField({
-                                                        field: "taxId",
-                                                        value: tax.id,
-                                                    }));
+                                                </div>
 
-                                                    dispatch(updateInvoiceField({
-                                                        field: "taxPercent",
-                                                        value: tax.taxRate,
-                                                    }));
 
-                                                }}
-                                                onManage={() => navigate("/settings/tax-master")}
-                                            />
-                                        </div>
+                                                <div className="w-32">
 
-                                        <div className="w-20 text-right text-gray-600">
-                                            - {fmt(tdsAmount)}
-                                        </div>
+                                                    <TaxDropdown
+                                                        type={invoice.salesType}
+                                                        taxes={taxes}
+                                                        selectedTax={selectedTax}
+                                                        onSelect={(tax) => {
 
-                                    </div>
+                                                            dispatch(updateInvoiceField({
+                                                                field: "taxId",
+                                                                value: tax.id,
+                                                            }));
+
+                                                            dispatch(updateInvoiceField({
+                                                                field: "taxPercent",
+                                                                value: tax.taxRate,
+                                                            }));
+
+                                                        }}
+                                                        onManage={() =>
+                                                            navigate("/settings/tax-master")
+                                                        }
+                                                    />
+
+                                                </div>
+
+
+                                                <div className="w-20 text-right text-gray-600">
+                                                    - {fmt(tdsAmount)}
+                                                </div>
+
+                                            </div>
+                                        </>
+                                    )}
 
                                     <hr className="mb-4 border-gray-200" />
 
@@ -1533,7 +1800,15 @@ export default function NewInvoiceFull() {
                                     <div className="flex items-center justify-between font-semibold">
 
                                         <span className="text-xl text-gray-700">
-                                            Total (₹)
+                                            Total ({new Intl.NumberFormat("en", {
+                                                style: "currency",
+                                                currency: currency || "INR",
+                                                currencyDisplay: "narrowSymbol",
+                                            })
+                                                .formatToParts(0)
+                                                .find(
+                                                    (part) => part.type === "currency"
+                                                )?.value})
                                         </span>
 
                                         <span className="text-2xl text-gray-700">

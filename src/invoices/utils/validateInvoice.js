@@ -19,8 +19,12 @@ export const validateInvoice = (invoice) => {
   }
 
   // Currency
-  if (!invoice.currency) {
-    errors.currency = "Currency is required.";
+  if (invoice.currency === "INR") {
+    const tax = Number(item.taxPercent ?? 0);
+
+    if (tax < 0) {
+      rowError.taxPercent = "Invalid tax percentage.";
+    }
   }
 
   // Sales Person

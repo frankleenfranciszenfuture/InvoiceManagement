@@ -8,19 +8,14 @@ import {
     BadgeIndianRupee,
 } from "lucide-react";
 
-export default function InvoiceHeader({ invoice }) {
+import useSelectedInvoice from "../../../templates/InvoiceTemplates/hooks/useSelectedInvoice";
 
-    // Replace later with Company Settings API
-    const company = invoice?.company || {
-        companyName: "FH Technology",
-        logo: "",
-        email: "info@fhtechnology.com",
-        phone: "+91 9876543210",
-        website: "www.fhtechnology.com",
-        gstNumber: "33ABCDE1234F1Z5",
-        panNumber: "ABCDE1234F",
-        address: "12G, MGR Street, Coimbatore, Tamil Nadu - 641011",
-    };
+export default function InvoiceHeader() {
+
+    const invoice = useSelectedInvoice();
+
+    // Temporary: Use customer as company
+    const company = invoice?.customer;
 
     const statusColor = {
         ACTIVE: "bg-green-100 text-green-700",
@@ -30,19 +25,28 @@ export default function InvoiceHeader({ invoice }) {
         OVERDUE: "bg-red-100 text-red-700",
     };
 
+    const address = [
+        company?.billingAddress?.address,
+        company?.billingAddress?.city,
+        company?.billingAddress?.state,
+        company?.billingAddress?.country,
+        company?.billingAddress?.zipCode,
+    ]
+        .filter(Boolean)
+        .join(", ");
+
     return (
         <div className="border-b border-gray-200 bg-white px-8 py-8">
 
-            {/* Top Section */}
+            {/* Header */}
             <div className="flex justify-between items-start">
 
-                {/* Company */}
-
+                {/* Company Details */}
                 <div className="flex gap-5">
 
                     <div className="flex h-20 w-20 items-center justify-center rounded-lg border bg-gray-50">
 
-                        {company.logo ? (
+                        {company?.logo ? (
                             <img
                                 src={company.logo}
                                 alt={company.companyName}
@@ -60,29 +64,29 @@ export default function InvoiceHeader({ invoice }) {
                     <div>
 
                         <h1 className="text-3xl font-bold text-gray-900">
-                            {company.companyName}
+                            {company?.companyName || company?.displayName || "-"}
                         </h1>
 
-                        <div className="mt-3 space-y-1 text-sm text-gray-600">
+                        <div className="mt-3 space-y-2 text-sm text-gray-600">
 
                             <div className="flex items-center gap-2">
                                 <MapPin size={15} />
-                                {company.address}
+                                {address || "-"}
                             </div>
 
                             <div className="flex items-center gap-2">
                                 <Mail size={15} />
-                                {company.email}
+                                {company?.email || "-"}
                             </div>
 
                             <div className="flex items-center gap-2">
                                 <Phone size={15} />
-                                {company.phone}
+                                {company?.workPhone || company?.mobile || "-"}
                             </div>
 
                             <div className="flex items-center gap-2">
                                 <Globe size={15} />
-                                {company.website}
+                                {company?.websiteUrl || "-"}
                             </div>
 
                         </div>
@@ -91,8 +95,7 @@ export default function InvoiceHeader({ invoice }) {
 
                 </div>
 
-                {/* Invoice */}
-
+                {/* Invoice Details */}
                 <div className="text-right">
 
                     <h2 className="text-5xl font-bold tracking-wide text-blue-700">
@@ -101,18 +104,25 @@ export default function InvoiceHeader({ invoice }) {
 
                     <div className="mt-4 space-y-2">
 
-                        <p className="text-gray-600">
+                        <p>
                             <span className="font-semibold">
                                 Invoice No :
                             </span>{" "}
-                            {invoice?.invoiceNumber}
+                            {invoice?.invoiceNumber || "-"}
                         </p>
 
-                        <p className="text-gray-600">
+                        <p>
                             <span className="font-semibold">
                                 Invoice Date :
                             </span>{" "}
-                            {invoice?.invoiceDate}
+                            {invoice?.invoiceDate || "-"}
+                        </p>
+
+                        <p>
+                            <span className="font-semibold">
+                                Due Date :
+                            </span>{" "}
+                            {invoice?.dueDate || "-"}
                         </p>
 
                         <span
@@ -120,7 +130,7 @@ export default function InvoiceHeader({ invoice }) {
                                 "bg-gray-100 text-gray-700"
                                 }`}
                         >
-                            {invoice?.invoiceStatus}
+                            {invoice?.invoiceStatus || "DRAFT"}
                         </span>
 
                     </div>
@@ -130,7 +140,6 @@ export default function InvoiceHeader({ invoice }) {
             </div>
 
             {/* GST / PAN */}
-
             <div className="mt-8 grid grid-cols-2 gap-6 rounded-lg bg-gray-50 p-4">
 
                 <div className="flex items-center gap-3">
@@ -143,11 +152,11 @@ export default function InvoiceHeader({ invoice }) {
                     <div>
 
                         <p className="text-xs text-gray-500">
-                            GST Number
+                            PAN Number
                         </p>
 
                         <p className="font-medium">
-                            {company.gstNumber}
+                            {company?.pan || "-"}
                         </p>
 
                     </div>
@@ -157,11 +166,11 @@ export default function InvoiceHeader({ invoice }) {
                 <div>
 
                     <p className="text-xs text-gray-500">
-                        PAN Number
+                        Customer Type
                     </p>
 
                     <p className="font-medium">
-                        {company.panNumber}
+                        {company?.customerType || "-"}
                     </p>
 
                 </div>

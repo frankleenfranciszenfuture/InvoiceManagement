@@ -21,31 +21,31 @@ export default function InvoiceTemplate1({ invoice }) {
 
     return (
         <div className="bg-white text-gray-800 min-h-screen">
-            <InvoiceHeader invoice={invoice} />
+            <InvoiceHeader />
 
             <div className="grid grid-cols-2 gap-8 px-8 py-6">
-                <CustomerDetails invoice={invoice} />
-                <InvoiceInfo invoice={invoice} />
+                <CustomerDetails />
+                <InvoiceInfo />
             </div>
 
             <div className="px-8 pb-4">
-                <SalesPersonDetails invoice={invoice} />
+                <SalesPersonDetails />
             </div>
 
             <div className="px-8">
-                <InvoiceItemsTable invoice={invoice} />
+                <InvoiceItemsTable />
             </div>
 
             <div className="flex justify-end px-8 mt-6">
-                <InvoiceTotals invoice={invoice} />
+                <InvoiceTotals />
             </div>
 
             <div className="grid grid-cols-2 gap-8 px-8 mt-8">
-                <NotesTerms invoice={invoice} />
-                <BankDetails invoice={invoice} />
+                <NotesTerms />
+                <BankDetails />
             </div>
 
-            <Footer invoice={invoice} />
+            <Footer />
         </div>
     );
 }

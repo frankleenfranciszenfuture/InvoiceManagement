@@ -25,9 +25,12 @@ export default function InvoiceOverViewCardDashboard() {
     const navigate = useNavigate();
 
     const invoiceState = useSelector((state) => state.invoice);
-    const invoice = useSelector((state) => state.invoice.selectedInvoice);
+    const { invoices, selectedInvoice } = useSelector(
+        (state) => state.invoice
+    );
+
     const {
-        invoices,
+
         loading,
         error,
         page,
@@ -110,7 +113,7 @@ export default function InvoiceOverViewCardDashboard() {
                             </button>
 
                             <div className="p-20 rounded-md bg-gray-100 overflow-hidden">
-                                <InvoicePreviewTemplateDashboard invoice={invoices} />
+                                <InvoicePreviewTemplateDashboard invoice={selectedInvoice} />
                             </div>
                         </div>
                     </div>

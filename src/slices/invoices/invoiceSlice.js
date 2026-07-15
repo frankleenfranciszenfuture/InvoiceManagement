@@ -150,6 +150,8 @@ const initialState = {
   exchangeRateError: null,
 
   errors: {},
+
+  isDirty: false,
 };
 
 const invoiceSlice = createSlice({
@@ -374,6 +376,8 @@ const invoiceSlice = createSlice({
         tdsAmount +
         (Number(state.shippingCharges) || 0) +
         (Number(state.adjustment) || 0);
+
+      state.isDirty = true;
     },
 
     removeItem(state, action) {
@@ -425,11 +429,17 @@ const invoiceSlice = createSlice({
       state.adjustment = action.payload.adjustment ?? 0;
       state.totalAmount = action.payload.totalAmount ?? 0;
       state.invoiceStatus = action.payload.invoiceStatus ?? "ACTIVE";
+
+      state.isDirty = true;
     },
 
     // ==========================
     // currency
     // ==========================
+
+    setCustomerCurrency: (state, action) => {
+      state.customerCurrency = action.payload;
+    },
 
     setCurrency: (state, action) => {
       state.currency = action.payload;
@@ -976,7 +986,7 @@ export const {
   setItemName,
 
   //currency & exchangeRate
-
+  setCustomerCurrency,
   setCurrency,
   setCurrencySearch,
   setOpenCurrency,

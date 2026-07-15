@@ -1,78 +1,74 @@
 import React from "react";
+import {
+    User,
+    Building2,
+    Mail,
+    Phone,
+    MapPin,
+} from "lucide-react";
 
-export default function CustomerDetails({ invoice }) {
+import useSelectedInvoice from "../../../templates/InvoiceTemplates/hooks/useSelectedInvoice";
+
+export default function CustomerDetails() {
+
+    const invoice = useSelectedInvoice();
+
     const customer = invoice?.customer;
     const billing = customer?.billingAddress;
-    const shipping = customer?.shippingAddress;
 
     return (
-        <div className="space-y-6">
-            {/* Bill To */}
-            <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Bill To
-                </h3>
+        <div className="rounded-lg border border-gray-200 bg-white p-6">
 
-                <div className="space-y-1 text-sm">
-                    <p className="font-semibold text-gray-900">
+            <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold text-gray-800">
+                <User size={20} />
+                Bill To
+            </h3>
+
+            <div className="space-y-3">
+
+                <div>
+                    <h4 className="text-lg font-semibold text-gray-900">
                         {customer?.displayName || "-"}
-                    </p>
+                    </h4>
 
                     {customer?.companyName && (
-                        <p>{customer.companyName}</p>
+                        <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                            <Building2 size={15} />
+                            {customer.companyName}
+                        </div>
                     )}
+                </div>
 
-                    <p>{customer?.email || "-"}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Mail size={15} />
+                    {customer?.email || "-"}
+                </div>
 
-                    <p>{customer?.mobile || "-"}</p>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Phone size={15} />
+                    {customer?.mobileCode} {customer?.mobile}
+                </div>
 
-                    <div className="pt-2 text-gray-600">
-                        <p>{billing?.attention}</p>
-                        <p>{billing?.address}</p>
+                <div className="flex items-start gap-2 text-sm text-gray-600">
+                    <MapPin size={15} className="mt-1" />
 
-                        <p>
-                            {billing?.city}
-                            {billing?.city && billing?.state ? ", " : ""}
-                            {billing?.state}
-                        </p>
+                    <div>
+                        <div>{billing?.attention}</div>
 
-                        <p>
-                            {billing?.country}
-                            {billing?.country && billing?.zipCode ? " - " : ""}
-                            {billing?.zipCode}
-                        </p>
+                        <div>{billing?.address}</div>
+
+                        <div>
+                            {billing?.city}, {billing?.state}
+                        </div>
+
+                        <div>
+                            {billing?.country} - {billing?.zipCode}
+                        </div>
                     </div>
                 </div>
+
             </div>
 
-            {/* Ship To */}
-            <div>
-                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                    Ship To
-                </h3>
-
-                <div className="space-y-1 text-sm text-gray-600">
-                    <p>{shipping?.attention}</p>
-
-                    <p>{shipping?.address}</p>
-
-                    <p>
-                        {shipping?.city}
-                        {shipping?.city && shipping?.state ? ", " : ""}
-                        {shipping?.state}
-                    </p>
-
-                    <p>
-                        {shipping?.country}
-                        {shipping?.country && shipping?.zipCode ? " - " : ""}
-                        {shipping?.zipCode}
-                    </p>
-
-                    {shipping?.phone && (
-                        <p>Phone : {shipping.phone}</p>
-                    )}
-                </div>
-            </div>
         </div>
     );
 }

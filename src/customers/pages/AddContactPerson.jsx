@@ -24,7 +24,7 @@ export default function AddContactPerson() {
             <div className="w-[1000px] bg-white rounded-md shadow-xl overflow-hidden">
 
                 {/* Header */}
-                <div className="flex items-center justify-between border-b px-6 py-4">
+                <div className="flex items-center justify-between border-b border-gray-300 px-6 py-4">
                     <h2 className="text-2xl font-medium">Add Contact Person</h2>
 
                     <button
@@ -46,7 +46,7 @@ export default function AddContactPerson() {
 
                             <label>Name</label>
 
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-3 gap-3 ">
 
                                 <select
                                     value={contactForm.salutation ?? ""}
@@ -58,7 +58,7 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="border rounded px-3 py-2"
+                                    className="border border-gray-300 rounded px-3 py-2"
                                 >
                                     <option value="">Salutation</option>
                                     <option>Mr.</option>
@@ -77,7 +77,7 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="border rounded px-3 py-2"
+                                    className="border border-gray-300 rounded px-3 py-2"
                                 />
 
                                 <input
@@ -91,7 +91,7 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="border rounded px-3 py-2"
+                                    className="border border-gray-300 rounded px-3 py-2"
                                 />
 
                             </div>
@@ -114,7 +114,7 @@ export default function AddContactPerson() {
                                         })
                                     )
                                 }
-                                className="border rounded px-3 py-2"
+                                className="border border-gray-300 rounded px-3 py-2"
                             />
 
                         </div>
@@ -126,7 +126,7 @@ export default function AddContactPerson() {
 
                             <div className="flex gap-3">
 
-                                <select className="w-20 border rounded px-2">
+                                <select className="w-20 border border-gray-300 rounded px-2">
                                     <option>+91</option>
                                 </select>
 
@@ -141,7 +141,7 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="flex-1 border rounded px-3 py-2"
+                                    className="flex-1 border border-gray-300 rounded px-3 py-2"
                                 />
 
                             </div>
@@ -155,7 +155,7 @@ export default function AddContactPerson() {
 
                             <div className="flex gap-3">
 
-                                <select className="w-20 border rounded px-2">
+                                <select className="w-20 border border-gray-300 rounded px-2">
                                     <option>+91</option>
                                 </select>
 
@@ -170,7 +170,7 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="flex-1 border rounded px-3 py-2"
+                                    className="flex-1 border border-gray-300 rounded px-3 py-2"
                                 />
 
                             </div>
@@ -193,7 +193,7 @@ export default function AddContactPerson() {
                                         })
                                     )
                                 }
-                                className="border rounded px-3 py-2"
+                                className="border border-gray-300 rounded px-3 py-2"
                             />
 
                         </div>
@@ -216,7 +216,7 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="border rounded px-3 py-2"
+                                    className="border border-gray-300 rounded px-3 py-2"
                                 />
 
                                 <input
@@ -230,14 +230,14 @@ export default function AddContactPerson() {
                                             })
                                         )
                                     }
-                                    className="border rounded px-3 py-2"
+                                    className="border border-gray-300 rounded px-3 py-2"
                                 />
 
                             </div>
 
                         </div>
 
-                        <div className="border-t mt-8 pt-5">
+                        {/* <div className="border-t border-gray-300 mt-8 pt-5">
 
                             <label className="flex items-center gap-2">
                                 <input
@@ -259,14 +259,14 @@ export default function AddContactPerson() {
                                 This customer will be able to log in and view transactions.
                             </p>
 
-                        </div>
+                        </div> */}
 
                     </div>
 
                     {/* RIGHT */}
-                    <div className="w-72 border-l p-6">
+                    <div className="w-72 border-l border-gray-300 p-6">
 
-                        <div className="border-2 border-dashed rounded-lg h-64 flex flex-col items-center justify-center text-center">
+                        <div className="border-2 border-dashed border-gray-300 rounded-lg h-64 flex flex-col items-center justify-center text-center">
 
                             <div className="text-4xl text-blue-500 mb-3">⬆</div>
 
@@ -293,7 +293,7 @@ export default function AddContactPerson() {
                 </div>
 
                 {/* Footer */}
-                <div className="border-t px-6 py-4 flex gap-3">
+                <div className="border-t border-gray-300 px-6 py-4 flex gap-3">
 
                     <button className="bg-blue-600 text-white px-6 py-2 rounded">
                         Save
@@ -301,7 +301,7 @@ export default function AddContactPerson() {
 
                     <button
                         onClick={handleClose}
-                        className="border px-6 py-2 rounded"
+                        className="border border-gray-300 px-6 py-2 rounded"
                     >
                         Cancel
                     </button>

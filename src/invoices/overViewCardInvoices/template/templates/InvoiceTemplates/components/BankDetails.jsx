@@ -3,111 +3,120 @@ import {
     Landmark,
     CreditCard,
     Hash,
-    MapPin,
-    Smartphone,
+    Building2,
+    QrCode,
 } from "lucide-react";
 
-export default function BankDetails({ invoice }) {
-    // Future: replace with invoice.company or organization settings
-    const bank = invoice?.bankDetails || {
-        accountHolder: "FH Technology",
+import useSelectedInvoice from "../../../templates/InvoiceTemplates/hooks/useSelectedInvoice";
+
+
+export default function BankDetails() {
+
+    useSelectedInvoice(); // Reserved for future Company Settings integration
+
+    // Replace with Company Settings API later
+    const bank = {
+        accountName: "FH Technology",
         bankName: "State Bank of India",
-        accountNumber: "XXXXXXXXXXXX1234",
-        ifscCode: "SBIN0001234",
-        branch: "Coimbatore Branch",
-        upiId: "fhtechnology@sbi",
+        accountNumber: "1234567890123456",
+        ifsc: "SBIN0001234",
+        branch: "Coimbatore",
+        upiId: "payments@fhtech",
     };
 
-    return (
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div className="border-b border-gray-200 px-5 py-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                    Bank Details
-                </h3>
+    const Row = ({ icon: Icon, label, value }) => (
+        <div className="flex items-start gap-3">
+
+            <div className="rounded-lg bg-blue-50 p-2">
+                <Icon
+                    size={18}
+                    className="text-blue-600"
+                />
             </div>
 
-            <div className="space-y-4 p-5">
+            <div>
+                <p className="text-xs uppercase tracking-wide text-gray-500">
+                    {label}
+                </p>
 
-                <div className="flex items-center gap-3">
-                    <CreditCard className="h-5 w-5 text-blue-600" />
-                    <div>
-                        <p className="text-xs text-gray-500">
-                            Account Holder
-                        </p>
-                        <p className="font-medium">
-                            {bank.accountHolder}
-                        </p>
+                <p className="mt-1 font-medium text-gray-800">
+                    {value}
+                </p>
+            </div>
+
+        </div>
+    );
+
+    return (
+        <div className="mt-8 rounded-xl border border-gray-200 bg-white shadow-sm">
+
+            <div className="border-b bg-gray-50 px-6 py-4">
+
+                <h2 className="text-lg font-semibold text-gray-800">
+                    Bank Details
+                </h2>
+
+            </div>
+
+            <div className="grid grid-cols-2 gap-8 p-6">
+
+                <Row
+                    icon={Building2}
+                    label="Account Name"
+                    value={bank.accountName}
+                />
+
+                <Row
+                    icon={Landmark}
+                    label="Bank Name"
+                    value={bank.bankName}
+                />
+
+                <Row
+                    icon={CreditCard}
+                    label="Account Number"
+                    value={bank.accountNumber}
+                />
+
+                <Row
+                    icon={Hash}
+                    label="IFSC Code"
+                    value={bank.ifsc}
+                />
+
+                <Row
+                    icon={Building2}
+                    label="Branch"
+                    value={bank.branch}
+                />
+
+                <div className="flex items-start gap-3">
+
+                    <div className="rounded-lg bg-green-50 p-2">
+                        <QrCode
+                            size={18}
+                            className="text-green-600"
+                        />
                     </div>
-                </div>
 
-                <div className="flex items-center gap-3">
-                    <Landmark className="h-5 w-5 text-green-600" />
                     <div>
-                        <p className="text-xs text-gray-500">
-                            Bank Name
-                        </p>
-                        <p className="font-medium">
-                            {bank.bankName}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Hash className="h-5 w-5 text-purple-600" />
-                    <div>
-                        <p className="text-xs text-gray-500">
-                            Account Number
-                        </p>
-                        <p className="font-medium">
-                            {bank.accountNumber}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Hash className="h-5 w-5 text-orange-600" />
-                    <div>
-                        <p className="text-xs text-gray-500">
-                            IFSC Code
-                        </p>
-                        <p className="font-medium">
-                            {bank.ifscCode}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <MapPin className="h-5 w-5 text-red-600" />
-                    <div>
-                        <p className="text-xs text-gray-500">
-                            Branch
-                        </p>
-                        <p className="font-medium">
-                            {bank.branch}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <Smartphone className="h-5 w-5 text-indigo-600" />
-                    <div>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs uppercase tracking-wide text-gray-500">
                             UPI ID
                         </p>
-                        <p className="font-medium">
+
+                        <p className="mt-1 font-medium text-gray-800">
                             {bank.upiId}
                         </p>
-                    </div>
-                </div>
 
-                {/* Optional QR Code */}
-                <div className="pt-4 border-t border-gray-200 flex justify-center">
-                    <div className="flex h-32 w-32 items-center justify-center rounded border-2 border-dashed border-gray-300 text-center text-xs text-gray-400">
-                        QR Code
+                        <div className="mt-3 flex h-24 w-24 items-center justify-center rounded-lg border bg-gray-50 text-xs text-gray-400">
+                            QR
+                        </div>
                     </div>
+
                 </div>
 
             </div>
+
         </div>
     );
 }

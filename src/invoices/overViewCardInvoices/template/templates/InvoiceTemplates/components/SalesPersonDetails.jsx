@@ -1,70 +1,82 @@
 import React from "react";
-import { User, Mail, Phone } from "lucide-react";
+import {
+    UserCheck,
+    Mail,
+    Phone,
+    BadgeCheck,
+} from "lucide-react";
 
-export default function SalesPersonDetails({ invoice }) {
+import useSelectedInvoice from "../../../templates/InvoiceTemplates/hooks/useSelectedInvoice";
+
+export default function SalesPersonDetails() {
+
+    const invoice = useSelectedInvoice();
+
     const salesPerson = invoice?.salesPerson;
 
-    if (!salesPerson) {
-        return null;
-    }
-
     return (
-        <div className="rounded-lg border border-gray-200 bg-white p-5">
-            <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-500">
+        <div className="mt-6 rounded-lg border border-gray-200 bg-white p-6">
+
+            <h3 className="mb-5 flex items-center gap-2 text-lg font-semibold text-gray-800">
+                <UserCheck size={20} />
                 Sales Person
             </h3>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-                <div className="flex items-center gap-3">
-                    <div className="rounded-full bg-blue-100 p-2">
-                        <User className="h-5 w-5 text-blue-600" />
-                    </div>
+            {!salesPerson ? (
+                <div className="rounded-md bg-gray-50 p-4 text-gray-500">
+                    No sales person assigned.
+                </div>
+            ) : (
+                <div className="grid grid-cols-3 gap-6">
 
                     <div>
-                        <p className="text-xs text-gray-500">
+                        <label className="text-xs text-gray-500">
                             Name
-                        </p>
+                        </label>
 
-                        <p className="font-medium text-gray-900">
+                        <div className="mt-2 flex items-center gap-2 font-medium">
+                            <BadgeCheck
+                                size={16}
+                                className="text-blue-600"
+                            />
+
                             {salesPerson.salesPersonName || "-"}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="rounded-full bg-green-100 p-2">
-                        <Mail className="h-5 w-5 text-green-600" />
+                        </div>
                     </div>
 
                     <div>
-                        <p className="text-xs text-gray-500">
+                        <label className="text-xs text-gray-500">
                             Email
-                        </p>
+                        </label>
 
-                        <p className="font-medium text-gray-900">
+                        <div className="mt-2 flex items-center gap-2">
+                            <Mail
+                                size={16}
+                                className="text-gray-500"
+                            />
+
                             {salesPerson.email || "-"}
-                        </p>
-                    </div>
-                </div>
-
-                <div className="flex items-center gap-3">
-                    <div className="rounded-full bg-orange-100 p-2">
-                        <Phone className="h-5 w-5 text-orange-600" />
+                        </div>
                     </div>
 
                     <div>
-                        <p className="text-xs text-gray-500">
+                        <label className="text-xs text-gray-500">
                             Phone
-                        </p>
+                        </label>
 
-                        <p className="font-medium text-gray-900">
+                        <div className="mt-2 flex items-center gap-2">
+                            <Phone
+                                size={16}
+                                className="text-gray-500"
+                            />
+
                             {salesPerson.phone || "-"}
-                        </p>
+                        </div>
                     </div>
-                </div>
 
-            </div>
+                </div>
+            )}
+
         </div>
     );
 }
