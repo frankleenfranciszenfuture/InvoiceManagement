@@ -1,0 +1,28 @@
+.react-select__menu-list {
+  max-height: 220px;
+  overflow-y: auto;
+}
+
+/* Chrome, Edge */
+.react-select__menu-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.react-select__menu-list::-webkit-scrollbar-track {
+  background: #f3f4f6;
+}
+
+.react-select__menu-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.react-select__menu-list::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Firefox */
+.react-select__menu-list {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 #f3f4f6;
+}

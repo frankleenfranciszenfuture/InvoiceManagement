@@ -14,6 +14,7 @@ import {
   getInvoiceItems,
   getInvoiceItemById,
   loadCustomerInvoices,
+  loadInvoiceCustomers,
 } from "./thunks/invoiceThunks";
 
 // customers
@@ -67,12 +68,19 @@ const initialState = {
 
   // Pagination
   page: 0,
-  pageSize: 10,
+  pageSize: 100,
   totalPages: 0,
   totalElements: 0,
 
   // Invoice Meta
   invoiceNumber: "",
+  invoiceNumberPreference: {
+    prefix: "",
+    nextNumber: "",
+
+    mode: "AUTO", // AUTO / MANUAL
+  },
+
   invoiceDate: new Date().toISOString().split("T")[0],
   dueDate: "",
   terms: "",
@@ -182,6 +190,20 @@ const invoiceSlice = createSlice({
     setInvoiceNumber: (state, action) => {
       state.invoiceNumber = action.payload;
     },
+
+    setInvoiceNumberPreference: (state, action) => {
+      state.invoiceNumberPreference = action.payload;
+    },
+
+    updateInvoiceNumberPreference: (state, action) => {
+      state.invoiceNumberPreference = {
+        ...state.invoiceNumberPreference,
+
+        ...action.payload,
+      };
+    },
+
+    //invoicedate
     setInvoiceDate: (state, action) => {
       state.invoiceDate = action.payload;
     },
@@ -758,6 +780,29 @@ const invoiceSlice = createSlice({
       })
 
       // ==========================
+      // loadInvoiceCustomers
+      // ==========================
+
+      .addCase(loadInvoiceCustomers.pending, (state) => {
+        state.customerLoading = true;
+        state.customerError = null;
+      })
+
+      .addCase(loadInvoiceCustomers.fulfilled, (state, action) => {
+        state.customerLoading = false;
+
+        console.log("Invoice Customers Payload:", action.payload);
+
+        state.customers = action.payload.content || [];
+      })
+
+      .addCase(loadInvoiceCustomers.rejected, (state, action) => {
+        state.customerLoading = false;
+
+        state.customerError = action.payload;
+      })
+
+      // ==========================
       // itemMasters
       // ==========================
 
@@ -939,6 +984,8 @@ export const {
 
   // Invoice Meta
   setInvoiceNumber,
+  setInvoiceNumberPreference,
+  updateInvoiceNumberPreference,
   setInvoiceDate,
   setDueDate,
   setTerms,

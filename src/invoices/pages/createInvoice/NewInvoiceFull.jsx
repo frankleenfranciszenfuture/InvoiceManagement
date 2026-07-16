@@ -4,15 +4,16 @@ import { useNavigate } from "react-router-dom";
 import DatePicker from "react-datepicker";
 import toast from "react-hot-toast";
 
-import { loadCustomers } from "../../../slices/customers/thunks/customerThunks";
-import { loadInvoiceNumber, addInvoice, loadInvoices } from "../../../slices/invoices/thunks/invoiceThunks"
+// import { loadCustomers } from "../../../slices/customers/thunks/customerThunks";
+import { loadInvoiceNumber, addInvoice, loadInvoices, loadInvoiceCustomers } from "../../../slices/invoices/thunks/invoiceThunks"
 import { loadItemMasters } from "../../../slices/itemMasters/thunks/itemMasterThunks"
 import { loadTaxMasters, getTaxMasterByType } from "../../../slices/invoices/tax/thunks/taxMasterThunks";
 import { loadSalesPerson } from "../../../slices/salesPerson/thunks/salesPersonThunks";
 import { loadCurrencies, loadExchangeRate } from "../../../slices/invoices/currency/thunks/currencyThunks"
-import { closeModal } from "../../../slices/Ui/uiSlice";
+import { closeModal, openCustomerModal, closeInvoiceNumberModal, openInvoiceNumberModal } from "../../../slices/Ui/uiSlice";
 import { validateInvoice } from "../../../invoices/utils/validateInvoice";
-
+// import NewCustomerModal from "../../../invoices/models/NewCustomerModal";
+import CustomerModal from "../../models/customerModel/CustomerModal";
 import { formatCurrency } from "../../../invoices/utils/formatCurrency";
 
 
@@ -32,7 +33,9 @@ import {
     setSubject,
     //......................//
 
-    //dateRelated
+    //invoiceRelated
+    setInvoiceNumber,
+    updateInvoiceNumberPreference,
     setInvoiceDate,
     setDueDate,
     setTerms,
@@ -84,6 +87,8 @@ import {
     resetDirty,
     resetInvoice
 
+
+
 } from "../../../slices/invoices/invoiceSlice";
 
 import {
@@ -113,11 +118,19 @@ import {
 import { TaxDropdown, TaxTypeSelector } from "../../components/Tax";
 import InvoiceAddPaymentCard from "../../components/bars/InvoiceAddPaymentCard";
 import BottomActionBarInvoice from "../../pages/createInvoice/BottomActionBarInvoice";
+import NewCustomerModal from "../../models/NewCustomerModal";
+import { motion, AnimatePresence } from "framer-motion";
+import InvoiceNumberPreferenceModal from "../../models/invoices/invoiceNumber/InvoiceNumberPreferenceModal";
 
 export default function NewInvoiceFull() {
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
+
+
+    const isCustomerModalOpen = useSelector(
+        (state) => state.ui.isCustomerModalOpen
+    );
 
     const EMPTY_ARRAY = [];
     const EMPTY_OBJECT = {};
@@ -171,7 +184,61 @@ export default function NewInvoiceFull() {
     );
 
 
-    const invoiceNumber = useSelector((state) => state.invoice.invoiceNumber);
+    const invoiceNumber = useSelector(
+        (state) => state.invoice.invoiceNumber
+    );
+
+    const showInvoiceNumberModal = useSelector(
+        (state) => state.ui.showInvoiceNumberModal
+    );
+
+    const [showInvoiceNumberPreference, setShowInvoiceNumberPreference] =
+        useState(false);
+
+    const handleInvoiceNumberSave = (number) => {
+
+
+        dispatch(
+            setInvoiceNumber(number)
+        );
+
+
+    };
+
+    const openInvoiceNumberPreference = () => {
+
+        console.log("Settings clicked");
+
+
+        const index =
+            invoiceNumber.lastIndexOf("-");
+
+
+        console.log("invoiceNumber:", invoiceNumber);
+
+
+        dispatch(
+            updateInvoiceNumberPreference({
+
+                prefix:
+                    invoiceNumber.substring(0, index + 1),
+
+
+                nextNumber:
+                    invoiceNumber.substring(index + 1),
+
+
+                mode: "AUTO"
+
+            })
+        );
+
+
+        dispatch(
+            openInvoiceNumberModal()
+        );
+
+    };
 
     //taxMaster
 
@@ -296,7 +363,12 @@ export default function NewInvoiceFull() {
 
     // useEffect for dispatch values
     useEffect(() => {
-        dispatch(loadCustomers());
+
+        dispatch(loadInvoiceCustomers());
+
+    }, [dispatch]);
+
+    useEffect(() => {
         dispatch(loadInvoiceNumber());
         dispatch(loadInvoices());
         dispatch(loadItemMasters());
@@ -807,13 +879,41 @@ export default function NewInvoiceFull() {
                                                     </div>
 
                                                     <span className="text-sm font-medium text-blue-600">
-                                                        New Customer
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => dispatch(openCustomerModal())}
+                                                            className="w-full text-left px-3 py-2 text-blue-600 hover:bg-blue-50"
+                                                        >
+                                                            + New Customer
+                                                        </button>
                                                     </span>
                                                 </div>
 
                                             </div>
                                         )}
                                     </div>
+                                    <>
+                                        {/* Invoice UI */}
+
+                                        <AnimatePresence>
+                                            {isCustomerModalOpen && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: -80 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0, y: -80 }}
+                                                    transition={{ duration: 0.3 }}
+                                                    className="fixed inset-0 z-50 bg-black/40 flex justify-center items-start"
+                                                >
+                                                    <CustomerModal />
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
+
+                                        {/* <NewCustomerModal /> */}
+
+                                    </>
+
+
 
                                     {/* Search */}
                                     <button className="w-10 h-10 rounded-md bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center">
@@ -891,6 +991,7 @@ export default function NewInvoiceFull() {
                             </label>
 
                             <div className="relative w-[330px]">
+
                                 <input
                                     value={invoiceNumber || ""}
                                     readOnly
@@ -900,8 +1001,60 @@ export default function NewInvoiceFull() {
 
                                 <Settings
                                     size={14}
-                                    className="absolute right-3 top-3 text-blue-500"
+                                    className="absolute right-3 top-3 text-blue-500 cursor-pointer"
+                                    onClick={() => dispatch(openInvoiceNumberModal())}
                                 />
+
+                                {showInvoiceNumberPreference && (
+                                    <div
+                                        className="
+                fixed inset-0
+                bg-black/30
+                backdrop-blur-sm
+                flex items-start justify-center
+                pt-20
+                animate-overlay
+                z-50
+            "
+                                        onClick={() => setShowInvoiceNumberPreference(false)}
+                                    >
+                                        <div
+                                            className="
+                    w-[330px]
+                    bg-white
+                    rounded-modal
+                    shadow-modal
+                    animate-modal
+                "
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {/* Header */}
+                                            <div className="flex justify-between items-center p-4 border-b">
+                                                <h3 className="font-semibold text-gray-800">
+                                                    Invoice Number Preference
+                                                </h3>
+
+                                                <button
+                                                    onClick={() => setShowInvoiceNumberPreference(false)}
+                                                    className="
+                            text-gray-500
+                            hover:text-red-500
+                            text-xl
+                            transition-colors
+                        "
+                                                >
+                                                    ✕
+                                                </button>
+                                            </div>
+
+                                            {/* Content */}
+                                            <div className="p-4">
+                                                Your form here...
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
                             </div>
                         </div>
 
@@ -1919,11 +2072,19 @@ export default function NewInvoiceFull() {
                             </div>
                             {/* .......... */}
 
-
+                            {/* Invoice Number Modal */}
+                            {showInvoiceNumberModal && (
+                                <InvoiceNumberPreferenceModal
+                                    onSave={(number) => {
+                                        dispatch(setInvoiceNumber(number));
+                                        console.log(number)
+                                    }}
+                                />
+                            )}
                         </div>
                     </div>
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     )
 }

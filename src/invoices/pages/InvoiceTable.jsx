@@ -187,10 +187,11 @@ export default function InvoiceTable() {
 
                                 {/* Total */}
                                 <td className="px-5 py-3 font-semibold">
-                                    ₹
-                                    {Number(invoice.totalAmount || 0).toLocaleString()}
+                                    {new Intl.NumberFormat("en-IN", {
+                                        style: "currency",
+                                        currency: invoice.customer?.currency || "INR",
+                                    }).format(invoice.totalAmount || 0)}
                                 </td>
-
                                 {/* Items */}
                                 <td className="px-5 py-3 font-semibold">
                                     {invoice.items?.length || 0} Items

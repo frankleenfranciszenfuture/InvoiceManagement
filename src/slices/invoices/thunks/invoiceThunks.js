@@ -13,6 +13,8 @@ import {
   fetchInvoiceItemById,
 } from "../../../api/invoiceApi";
 
+import { fetchCustomers } from "../../../api/CustomerApi";
+
 export const loadInvoices = createAsyncThunk(
   "invoice/loadInvoices",
   async (params, { rejectWithValue }) => {
@@ -158,6 +160,25 @@ export const loadCustomerInvoices = createAsyncThunk(
       return await fetchCustomerInvoices(customerId, params);
     } catch (err) {
       return rejectWithValue(err.response?.data || err.message);
+    }
+  },
+);
+
+export const loadInvoiceCustomers = createAsyncThunk(
+  "invoice/loadCustomers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await fetchCustomers({
+        page: 0,
+        size: 1000,
+        search: "",
+        sortBy: "displayName",
+        direction: "asc",
+      });
+
+      return response;
+    } catch (error) {
+      return rejectWithValue(error.message);
     }
   },
 );

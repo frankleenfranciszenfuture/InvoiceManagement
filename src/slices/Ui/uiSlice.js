@@ -21,6 +21,14 @@ const initialState = {
 
   //invoicenew
   invoiceNewMenuOpen: false,
+
+  //customer model
+  customerModalOpen: false,
+
+  isCustomerModalOpen: false,
+
+  //invoicenumber change
+  showInvoiceNumberModal: false,
 };
 
 const uiSlice = createSlice({
@@ -105,6 +113,26 @@ const uiSlice = createSlice({
     closeInvoiceNewMenuOpen: (state) => {
       state.invoiceNewMenuOpen = false;
     },
+
+    //customermodel
+    openCustomerModal(state) {
+      state.customerModalOpen = true;
+      state.isCustomerModalOpen = true;
+    },
+
+    closeCustomerModal(state) {
+      state.customerModalOpen = false;
+      state.isCustomerModalOpen = false;
+    },
+
+    //invoiceNumber chnage
+    openInvoiceNumberModal: (state) => {
+      state.showInvoiceNumberModal = true;
+    },
+
+    closeInvoiceNumberModal: (state) => {
+      state.showInvoiceNumberModal = false;
+    },
   },
 });
 
@@ -138,5 +166,13 @@ export const {
   // invoicenew menu
   toggleInvoiceNewMenuOpen,
   closeInvoiceNewMenuOpen,
+
+  //customer model
+  openCustomerModal,
+  closeCustomerModal,
+
+  //invoiceNumber chnage
+  openInvoiceNumberModal,
+  closeInvoiceNumberModal,
 } = uiSlice.actions;
 export default uiSlice.reducer;

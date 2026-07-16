@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from "react-redux";
 import CustomerBottomActionBar from '../../customers/components/bars/CustomerBottomActionBar';
 import { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { closeModal } from "../../slices/Ui/uiSlice";
+import { closeModal, closeCustomerModal } from "../../slices/Ui/uiSlice";
 import toast from 'react-hot-toast';
 import store from "../../redux/store";
 
@@ -259,7 +259,10 @@ const AddressColumn = ({
 };
 
 
-export default function CreateCustomer() {
+export default function CreateCustomer({
+    mode = "page",
+    onSuccess,
+}) {
 
     const dispatch = useDispatch();
 
@@ -414,7 +417,16 @@ export default function CreateCustomer() {
                 })
             );
 
-            navigate(`/customers?status=${savedCustomer.status}`);
+            if (mode === "modal") {
+
+                dispatch(closeCustomerModal());
+
+                onSuccess?.(savedCustomer);
+
+            } else {
+
+                navigate(`/customers?status=${savedCustomer.status}`);
+            }
         } catch (error) {
             toast.error(error?.message || error || "Failed to create customer");
         }
@@ -452,7 +464,16 @@ export default function CreateCustomer() {
                 })
             );
 
-            navigate(`/customers?status=${savedCustomer.status}`);
+            if (mode === "modal") {
+
+                dispatch(closeCustomerModal());
+
+                onSuccess?.(savedCustomer);
+
+            } else {
+
+                navigate(`/customers?status=${savedCustomer.status}`);
+            }
         } catch (error) {
             toast.error(error?.message || error || "Failed to save draft");
         }
@@ -485,8 +506,13 @@ export default function CreateCustomer() {
 
     const handleCancel = () => {
         dispatch(resetDirty());
-        dispatch(closeModal());
-        navigate("/customers");
+
+        if (mode === "modal") {
+            dispatch(closeCustomerModal());
+        } else {
+            dispatch(closeModal());
+            navigate("/customers");
+        }
     };
 
     const handleDelete = async (id) => {
