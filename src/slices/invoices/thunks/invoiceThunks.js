@@ -51,6 +51,9 @@ export const addInvoice = createAsyncThunk(
 export const editInvoice = createAsyncThunk(
   "invoice/edit",
   async ({ id, data }, { rejectWithValue }) => {
+    console.log("PUT ID:", id);
+    console.log("PUT DATA:", JSON.stringify(data, null, 2));
+
     try {
       const response = await updateInvoice(id, data);
       return response;

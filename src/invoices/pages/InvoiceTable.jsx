@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 
@@ -11,7 +11,7 @@ import {
 
 
 import { openModal } from "../../slices/Ui/uiSlice";
-import { ChevronDown, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Edit, MoreHorizontal, Pencil, Plus, Trash2, View } from "lucide-react";
 import toast from "react-hot-toast";
 import ActionMenubar from "../../common/bars/Action/ActionMenubar";
 import { getInvoiceById } from "../../slices/invoices/thunks/invoiceThunks";
@@ -31,6 +31,7 @@ export default function InvoiceTable() {
 
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const [showEdit, setShowEdit] = useState(false);
 
     const {
         invoices = [],
@@ -96,6 +97,7 @@ export default function InvoiceTable() {
                                 "Total",
                                 "Items",
                                 "Status",
+                                "Tax",
                                 "Actions",
                             ].map((h) => (
                                 <th
@@ -115,7 +117,7 @@ export default function InvoiceTable() {
                                 key={invoice.id}
                                 onClick={() => {
                                     dispatch(setSelectedInvoice(invoice));
-                                    navigate(`/invoices/edit/${invoice.id}`);
+                                    navigate(`/invoices/view/${invoice.id}`);
 
                                 }}
                                 className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${idx % 2 === 1 ? "bg-gray-50/40" : ""
@@ -208,15 +210,100 @@ export default function InvoiceTable() {
                                 </td>
 
 
+                                {/* Tax */}
+                                <td className="px-5 py-3 font-semibold">
+                                    <span
+                                        className={`px-2 py-1 rounded-full text-xs font-medium ${statusColor[invoice.invoiceStatus]}`}
+                                    >
+                                        {invoice.item?.taxPercent || "—"}
+                                    </span>
+                                </td>
                                 {/* Actions */}
-                                <td className="px-6 py-3 text-right">
-                                    <ActionMenubar
-                                        onEdit={() => {
-                                            console.log("Invoice ID:", invoice.id);
-                                            dispatch(setSelectedInvoice(invoice));
-                                            navigate(`/invoices/edit/${invoice.id}`);
-                                        }}
-                                    />
+
+                                <td className="relative overflow-visible px-4 py-">
+                                    {/* Edit */}
+                                    <div className="flex justify-end">
+                                        <div className="relative group inline-block">
+                                            <button className="p-1 rounded-full bg-pink-500 text-white ">
+                                                <Edit size={16} />
+                                            </button>
+
+                                            <div
+                                                className="
+                                absolute
+                                right-0
+                                top-full
+                                mt-1
+                                z-[9999]
+                                opacity-0
+                                invisible
+                                group-hover:opacity-100
+                                group-hover:visible
+                                transition-all
+                              "
+                                            >
+                                                <div className="w-24 rounded-md bg-pink-500 shadow-lg ">
+
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation(); // Prevent row click
+                                                            setShowEdit(true);
+                                                            dispatch(setSelectedInvoice(invoice));
+                                                            navigate(`/invoices/edit/${invoice.id}`);
+                                                        }}
+                                                        className="flex w-full items-center gap-2 px-4 py-2 text-white hover:bg-pink-600 rounded-md"
+                                                    >
+                                                        <Edit size={16} />
+                                                        Edit
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        {/* ..view.. */}
+
+                                        <div className="flex justify-center pl-6">
+                                            <div className="relative group inline-block">
+                                                <button className="p-1 rounded-full bg-blue-700 text-white ">
+                                                    <View size={16} />
+                                                </button>
+
+                                                <div
+                                                    className="
+                                absolute
+                                right-0
+                                top-full
+                                mt-1
+                                z-[9999]
+                                opacity-0
+                                invisible
+                                group-hover:opacity-100
+                                group-hover:visible
+                                transition-all
+                              "
+                                                >
+                                                    <div className="w-24 rounded-md bg-blue-700 shadow-lg ">
+
+                                                        <button
+                                                            onClick={(e) => {
+                                                                e.stopPropagation(); // Prevent row click
+                                                                setShowEdit(true);
+                                                                dispatch(setSelectedInvoice(invoice));
+                                                                navigate(`/invoices/view/${invoice.id}`);
+                                                            }}
+                                                            className="flex w-full items-center gap-2 px-4 py-2 text-white hover:bg-blue-800 rounded-md"
+                                                        >
+                                                            <View size={16} />
+                                                            View
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                            </div>
+
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

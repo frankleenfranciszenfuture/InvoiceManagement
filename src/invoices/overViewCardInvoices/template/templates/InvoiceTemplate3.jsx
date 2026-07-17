@@ -242,52 +242,54 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                         </tr>
 
                     </thead>
-
                     <tbody>
                         {items.length > 0 ? (
-                            items.map((item, index) => (
-                                <tr key={item.id ?? index} className="border-b border-black">
-                                    <td className="border-r border-black p-2">{index + 1}</td>
+                            items.map((item, index) => {
+                                const taxable = (item.rate || 0) * (item.quantity || 0);
+                                const tax = taxable * (item.taxPercent || 0) / 100;
 
-                                    <td className="border-r border-black p-2">
-                                        {item.itemName}
-                                    </td>
+                                return (
+                                    <tr key={item.id ?? index} className="border-b border-black">
+                                        <td className="border-r border-black p-2">
+                                            {index + 1}
+                                        </td>
 
-                                    <td className="border-r border-black p-2">
-                                        {item.hsnCode ?? "-"}
-                                    </td>
+                                        <td className="border-r border-black p-2">
+                                            {item.itemName}
+                                        </td>
 
-                                    <td className="border-r border-black p-2">
-                                        {formatCurrency(item.rate, invoice.currency)}
-                                    </td>
+                                        <td className="border-r border-black p-2">
+                                            {item.hsnCode ?? "-"}
+                                        </td>
 
-                                    <td className="border-r border-black p-2">
-                                        {item.quantity}
-                                    </td>
+                                        <td className="border-r border-black p-2">
+                                            {formatCurrency(item.rate, invoice.currency)}
+                                        </td>
 
-                                    <td className="border-r border-black p-2">
-                                        {formatCurrency(
-                                            (item.rate || 0) * (item.quantity || 0),
-                                            invoice.currency
-                                        )}
-                                    </td>
+                                        <td className="border-r border-black p-2">
+                                            {item.quantity}
+                                        </td>
 
-                                    <td className="border-r border-black p-2">
-                                        {item.taxAmount ?? 0}%
-                                    </td>
+                                        <td className="border-r border-black p-2">
+                                            {formatCurrency(taxable, invoice.currency)}
+                                        </td>
 
-                                    <td className="p-2">
-                                        {formatCurrency(
-                                            ((item.rate || 0) * (item.quantity || 0)) +
-                                            (((item.rate || 0) * (item.quantity || 0) * (item.taxPercent || 0)) / 100),
-                                            invoice.currency
-                                        )}
-                                    </td>
-                                </tr>
-                            ))
+                                        <td className="border-r border-black p-2">
+                                            {item.taxPercent ?? 0}%
+                                        </td>
+
+                                        <td className="p-2">
+                                            {formatCurrency(taxable + tax, invoice.currency)}
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         ) : (
                             <tr>
-                                <td colSpan={8} className="px-3 py-10 text-center text-sm text-gray-500">
+                                <td
+                                    colSpan={8}
+                                    className="px-3 py-10 text-center text-sm text-gray-500"
+                                >
                                     No items found
                                 </td>
                             </tr>
@@ -303,9 +305,8 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                     <div className="flex">
 
                         <div className="w-1/2 border-r border-black p-3">
-                            Total Items : 2
+                            Total Items : {items.length}
                         </div>
-
                         <div className="w-1/2">
 
                             <table className="w-full">
@@ -318,27 +319,49 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                                         </td>
 
                                         <td className="p-2 text-right">
-                                            ₹1000
+                                            {formatCurrency(invoice.subTotal, invoice.currency)}
                                         </td>
                                     </tr>
 
                                     <tr>
                                         <td className="p-2 font-semibold">
-                                            GST
+                                            {invoice.taxNameSnapshot || "Tax"} ({invoice.taxRateSnapshot ?? 0}%)
                                         </td>
 
                                         <td className="p-2 text-right">
-                                            ₹180
+                                            {formatCurrency(invoice.taxAmount, invoice.currency)}
                                         </td>
                                     </tr>
+                                    {Number(invoice.shippingCharges) > 0 && (
+                                        <tr>
+                                            <td className="p-2 font-semibold">
+                                                Shipping Charges
+                                            </td>
 
+                                            <td className="p-2 text-right">
+                                                {formatCurrency(invoice.shippingCharges, invoice.currency)}
+                                            </td>
+                                        </tr>
+                                    )}
+
+                                    {Number(invoice.adjustment) !== 0 && (
+                                        <tr>
+                                            <td className="p-2 font-semibold">
+                                                Adjustment
+                                            </td>
+
+                                            <td className="p-2 text-right">
+                                                {formatCurrency(invoice.adjustment, invoice.currency)}
+                                            </td>
+                                        </tr>
+                                    )}
                                     <tr className="border-t border-black text-xl font-bold">
                                         <td className="p-2">
                                             Total
                                         </td>
 
                                         <td className="p-2 text-right">
-                                            ₹1180
+                                            {formatCurrency(invoice.totalAmount, invoice.currency)}
                                         </td>
                                     </tr>
 
@@ -395,19 +418,19 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                                 </td>
 
                                 <td className="border-r border-black p-2">
-                                    ₹1000
+                                    {formatCurrency(invoice.subTotal, invoice.currency)}
                                 </td>
 
                                 <td className="border-r border-black p-2">
-                                    18%
+                                    {invoice.taxRateSnapshot ?? 0}%
                                 </td>
 
                                 <td className="border-r border-black p-2">
-                                    ₹180
+                                    {formatCurrency(invoice.taxAmount, invoice.currency)}
                                 </td>
 
                                 <td className="p-2">
-                                    ₹180
+                                    {formatCurrency(invoice.taxAmount, invoice.currency)}
                                 </td>
 
                             </tr>

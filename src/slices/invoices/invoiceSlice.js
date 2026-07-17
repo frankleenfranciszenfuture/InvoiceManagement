@@ -480,6 +480,7 @@ const invoiceSlice = createSlice({
 
       state.isDirty = true;
     },
+
     // ==========================
     // currency
     // ==========================
@@ -560,12 +561,6 @@ const invoiceSlice = createSlice({
 
       state.invoiceTemplate = action.payload;
     },
-
-    setSelectedInvoice: (state, action) => {
-      console.log("Reducer called:", action.payload);
-
-      state.selectedInvoice = action.payload;
-    },
   },
 
   extraReducers: (builder) => {
@@ -626,7 +621,10 @@ const invoiceSlice = createSlice({
       .addCase(editInvoice.fulfilled, (state, action) => {
         state.loading = false;
 
-        const updatedInvoice = action.payload.data;
+        const updatedInvoice = action.payload;
+
+        if (!updatedInvoice) return;
+
         const index = state.invoices.findIndex(
           (invoice) => invoice.id === updatedInvoice.id,
         );
@@ -669,9 +667,61 @@ const invoiceSlice = createSlice({
         state.error = null;
       })
       .addCase(getInvoiceById.fulfilled, (state, action) => {
-        state.loading = false;
-        state.selectedInvoice = action.payload.data;
+        const invoice = action.payload;
+
+        state.id = invoice.id;
+
+        // Customer
+        state.customerId = invoice.customer?.id ?? null;
+        state.customerName = invoice.customer?.displayName ?? "";
+        state.customerSearch = invoice.customer?.displayName ?? "";
+
+        // Customer Address
+        state.billingAddress = invoice.customer?.billingAddress ?? "";
+        state.shippingAddress = invoice.customer?.shippingAddress ?? "";
+        state.city = invoice.customer?.city ?? "";
+        state.state = invoice.customer?.state ?? "";
+        state.country = invoice.customer?.country ?? "";
+        state.zipCode = invoice.customer?.zipCode ?? "";
+
+        // Sales Person
+        state.salesPersonId = invoice.salesPerson?.id ?? null;
+        state.salesPersonName = invoice.salesPerson?.salesPersonName ?? "";
+        state.salesPersonSearch = invoice.salesPerson?.salesPersonName ?? "";
+
+        // Invoice
+        state.invoiceNumber = invoice.invoiceNumber;
+        state.invoiceDate = invoice.invoiceDate;
+        state.dueDate = invoice.dueDate;
+        state.subject = invoice.subject;
+        state.orderNumber = invoice.orderNumber;
+        state.referenceNumber = invoice.referenceNumber;
+
+        state.currency = invoice.currency;
+        state.exchangeRate = invoice.exchangeRate;
+
+        state.customerNotes = invoice.customerNotes;
+        state.terms = invoice.terms;
+
+        state.shippingCharges = invoice.shippingCharges;
+        state.adjustment = invoice.adjustment;
+
+        // Items
+        state.invoiceItems = (invoice.items || []).map((item) => ({
+          id: item.id ?? crypto.randomUUID(),
+
+          itemId: item.itemId,
+          itemName: item.itemName ?? "",
+          description: item.description ?? "",
+          quantity: item.quantity ?? 1,
+          rate: item.rate ?? 0,
+          sellingPrice: item.rate ?? 0,
+          discount: item.discount ?? 0,
+          taxPercent: item.taxPercent ?? 0,
+          amount: item.amount ?? 0,
+        }));
       })
+
       .addCase(getInvoiceById.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
@@ -1062,7 +1112,7 @@ export const {
   setCurrency,
   setCurrencySearch,
   setOpenCurrency,
-  setCurrencyDropDown,
+  // setCurrencyDropDown,
   clearCurrency,
 
   // Selected Invoice / Reset
