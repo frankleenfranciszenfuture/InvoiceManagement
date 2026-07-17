@@ -1,5 +1,3 @@
-import React from "react";
-
 export const validateInvoice = (invoice) => {
   const errors = {};
 
@@ -16,15 +14,6 @@ export const validateInvoice = (invoice) => {
   // Due Date
   if (!invoice.dueDate) {
     errors.dueDate = "Due date is required.";
-  }
-
-  // Currency
-  if (invoice.currency === "INR") {
-    const tax = Number(item.taxPercent ?? 0);
-
-    if (tax < 0) {
-      rowError.taxPercent = "Invalid tax percentage.";
-    }
   }
 
   // Sales Person
@@ -57,7 +46,8 @@ export const validateInvoice = (invoice) => {
         rowError.discount = "Discount cannot be negative.";
       }
 
-      if (Number(item.taxPercent) < 0) {
+      // Validate tax only for INR invoices
+      if (invoice.currency === "INR" && Number(item.taxPercent) < 0) {
         rowError.taxPercent = "Invalid tax percentage.";
       }
 
@@ -70,6 +60,7 @@ export const validateInvoice = (invoice) => {
       errors.itemErrors = itemErrors;
     }
   }
+
   // Shipping
   if (Number(invoice.shippingCharges) < 0) {
     errors.shippingCharges = "Shipping charges cannot be negative.";

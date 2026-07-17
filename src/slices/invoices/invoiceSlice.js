@@ -106,6 +106,8 @@ const initialState = {
   discountType: "PERCENTAGE", // PERCENTAGE | AMOUNT
 
   taxAmount: 0,
+  roundOff: 0,
+  notes: "",
 
   shippingCharges: 0,
   adjustment: 0,
@@ -160,6 +162,18 @@ const initialState = {
   errors: {},
 
   isDirty: false,
+
+  signature: {
+    name: "",
+    designation: "",
+    company: "",
+
+    signatureImage: "",
+    sealImage: "",
+
+    declaration:
+      "We declare that this invoice shows the actual price of the goods described herein and that all particulars are true and correct.",
+  },
 };
 
 const invoiceSlice = createSlice({
@@ -201,6 +215,13 @@ const invoiceSlice = createSlice({
 
         ...action.payload,
       };
+    },
+
+    //invoice template signature
+    updateSignature: (state, action) => {
+      const { field, value } = action.payload;
+
+      state.selectedInvoice.signature[field] = value;
     },
 
     //invoicedate
@@ -420,9 +441,9 @@ const invoiceSlice = createSlice({
     // Selected Invoice
     // ==========================
     setSelectedInvoice: (state, action) => {
-      state.selectedInvoice = action.payload;
-
       if (!action.payload) return;
+
+      state.selectedInvoice = action.payload;
 
       state.invoiceNumber = action.payload.invoiceNumber;
       state.invoiceDate = action.payload.invoiceDate;
@@ -431,19 +452,24 @@ const invoiceSlice = createSlice({
       state.customerNotes = action.payload.customerNotes;
       state.terms = action.payload.terms;
       state.orderNumber = action.payload.orderNumber;
+      state.referenceNumber = action.payload.referenceNumber;
 
+      // Store complete objects
+      state.customer = action.payload.customer ?? null;
+      state.salesPerson = action.payload.salesPerson ?? null;
+
+      // Optional: keep IDs for dropdowns
       state.customerId = action.payload.customer?.id ?? "";
-      state.customerName = action.payload.customer?.displayName ?? "";
-
       state.salesPersonId = action.payload.salesPerson?.id ?? "";
-      state.salesPersonName = action.payload.salesPerson?.salesPersonName ?? "";
 
-      state.invoiceItems =
-        action.payload.items?.length > 0
-          ? action.payload.items
-          : [makeBlankItem()];
+      state.invoiceItems = action.payload.items?.length
+        ? action.payload.items
+        : [makeBlankItem()];
 
-      state.referenceNumber = action.payload.referenceNumber ?? "";
+      // Store complete item masters
+      state.itemMasters =
+        action.payload.items?.map((item) => item.itemMaster) ?? [];
+
       state.subTotal = action.payload.subTotal ?? 0;
       state.discountAmount = action.payload.discountAmount ?? 0;
       state.taxAmount = action.payload.taxAmount ?? 0;
@@ -454,7 +480,6 @@ const invoiceSlice = createSlice({
 
       state.isDirty = true;
     },
-
     // ==========================
     // currency
     // ==========================

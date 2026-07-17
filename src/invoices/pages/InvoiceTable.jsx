@@ -14,6 +14,7 @@ import { openModal } from "../../slices/Ui/uiSlice";
 import { ChevronDown, MoreHorizontal, Pencil, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import ActionMenubar from "../../common/bars/Action/ActionMenubar";
+import { getInvoiceById } from "../../slices/invoices/thunks/invoiceThunks";
 
 
 
@@ -114,7 +115,7 @@ export default function InvoiceTable() {
                                 key={invoice.id}
                                 onClick={() => {
                                     dispatch(setSelectedInvoice(invoice));
-                                    navigate(`/invoices/view/${invoice.id}`);
+                                    navigate(`/invoices/edit/${invoice.id}`);
 
                                 }}
                                 className={`border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors ${idx % 2 === 1 ? "bg-gray-50/40" : ""
@@ -211,7 +212,8 @@ export default function InvoiceTable() {
                                 <td className="px-6 py-3 text-right">
                                     <ActionMenubar
                                         onEdit={() => {
-                                            dispatch(setSelectedItemMaster(invoice));
+                                            console.log("Invoice ID:", invoice.id);
+                                            dispatch(setSelectedInvoice(invoice));
                                             navigate(`/invoices/edit/${invoice.id}`);
                                         }}
                                     />

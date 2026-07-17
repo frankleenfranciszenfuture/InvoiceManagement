@@ -25,6 +25,8 @@ import InvoiceDashboard from "./invoices/pages/InvoiceDashboard";
 import InvoiceTable from "./invoices/pages/InvoiceTable";
 import NewInvoiceFull from "./invoices/pages/createInvoice/NewInvoiceFull";
 import InvoiceOverViewCardDashboard from "./invoices/overViewCardInvoices/InvoiceOverViewCardDashboard";
+import ItemMasterTable2 from "./itemMasters/pages/ItemMasterTable2";
+import EditInvoice from "./invoices/pages/EditInvoice";
 
 
 
@@ -64,10 +66,11 @@ export default function App() {
 
           {/* Invoice overviewCard */}
           <Route path="/invoices/view/:id" element={<InvoiceOverViewCardDashboard />} />
-
+          <Route path="/invoices/edit/:id" element={<EditInvoice />} />
           {/* Items */}
           <Route path="/items" element={<ItemMasterDashboard />} />
           <Route path="/items/new" element={<ItemMasterCreate />} />
+          <Route path="/items/table" element={<ItemMasterTable2 />} />
 
 
         </Route>

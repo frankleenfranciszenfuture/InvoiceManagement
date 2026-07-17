@@ -4,7 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect } from "react";
 
 import CustomerBottomActionBar from '../../customers/components/bars/CustomerBottomActionBar';
-import { closeModal } from "../../slices/Ui/uiSlice";
+import { closeCustomerModal, closeModal } from "../../slices/Ui/uiSlice";
 import toast from "react-hot-toast";
 import store from "../../redux/store";
 
@@ -257,7 +257,8 @@ const AddressColumn = ({
     );
 };
 
-export default function EditCustomer() {
+export default function EditCustomer({ mode = "page",
+    onSuccess, }) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id } = useParams();
@@ -419,7 +420,14 @@ export default function EditCustomer() {
     };
 
     const handleCancel = () => {
-        dispatch(closeModal());
+        dispatch(resetDirty());
+
+        if (mode === "modal") {
+            dispatch(closeCustomerModal());
+        } else {
+            dispatch(closeModal());
+            navigate("/customers");
+        }
     };
 
     const handleDelete = async (id) => {

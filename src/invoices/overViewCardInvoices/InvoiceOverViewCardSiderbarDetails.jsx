@@ -2,7 +2,7 @@ import React from 'react'
 import { useDispatch, useSelector } from "react-redux";
 import { setSelectedInvoice } from "../../slices/invoices/invoiceSlice";
 import { FileText, Plus } from 'lucide-react';
-
+import { formatCurrency } from '../utils/formatCurrency';
 export default function InvoiceOverViewCardSiderbarDetails() {
     const dispatch = useDispatch();
 
@@ -16,8 +16,10 @@ export default function InvoiceOverViewCardSiderbarDetails() {
 
     return (
         <div className="w-[440px] h-screen bg-white border-r border-gray-200 overflow-y-auto">
+
             {invoices?.length > 0 ? (
                 invoices.map((inv) => (
+
                     <div
                         key={inv.id}
                         onClick={() => dispatch(setSelectedInvoice(inv))}
@@ -58,7 +60,10 @@ export default function InvoiceOverViewCardSiderbarDetails() {
 
                             <div className="text-right">
                                 <p className="font-semibold">
-                                    ₹{Number(inv.totalAmount || 0).toFixed(2)}
+                                    {formatCurrency(
+                                        inv.totalAmount,
+                                        inv.customer?.country === "India" ? "INR" : inv.currency
+                                    )}
                                 </p>
                             </div>
                         </div>

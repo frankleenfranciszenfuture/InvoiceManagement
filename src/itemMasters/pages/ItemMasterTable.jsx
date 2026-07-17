@@ -84,7 +84,7 @@ export default function ItemMasterTable() {
                     </thead>
 
 
-                    <tbody>
+                    <tbody className="text-slate-600">
                         {itemMasters?.length > 0 ? (
                             itemMasters.map((item, index) => (
                                 <tr
