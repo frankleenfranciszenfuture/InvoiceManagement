@@ -25,6 +25,7 @@ public interface InvoiceMapper {
     @Mapping(target = "taxName", source = "taxMaster.taxName")
     @Mapping(target = "taxType", source = "taxMaster.taxType")
     @Mapping(target = "taxRate", source = "taxMaster.taxRate")
+    @Mapping(source = "currency", target = "currency")
     InvoiceResponse toResponse(Invoice invoice);
 
     // Request -> Entity

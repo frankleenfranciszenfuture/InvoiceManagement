@@ -84,7 +84,7 @@ public class CustomerController {
             @PathVariable Long customerId,
             @RequestParam(defaultValue = "") String search,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "100") int size,
             @RequestParam(defaultValue = "invoiceDate") String sortBy,
             @RequestParam(defaultValue = "desc") String direction) {
 

@@ -1,5 +1,6 @@
 package com.inm.controller.invoice;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.inm.dto.commonResponses.ApiResponse;
 import com.inm.dto.commonResponses.PageResponse;
 import com.inm.dto.invoice.request.InvoiceRequest;
@@ -65,11 +66,23 @@ public class InvoiceController {
                         response));
     }
 
-    
+
     @PutMapping("/{id}")
-    public InvoiceResponse update(@PathVariable Long id,
-                                  @RequestBody InvoiceRequest request) {
-        return invoiceService.update(id, request);
+    public ResponseEntity<ApiResponse<InvoiceResponse>> update(
+            @PathVariable Long id,
+            @RequestBody InvoiceRequest request) {
+
+        System.out.println("===== CONTROLLER HIT =====");
+        System.out.println(request);
+
+        InvoiceResponse response = invoiceService.update(id, request);
+
+        return ResponseEntity.ok(
+                ApiResponse.success(
+                        "Invoice updated successfully.",
+                        response
+                )
+        );
     }
 
     @GetMapping("/{id}")

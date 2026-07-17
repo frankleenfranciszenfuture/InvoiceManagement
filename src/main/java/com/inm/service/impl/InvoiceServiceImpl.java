@@ -59,9 +59,21 @@ public class InvoiceServiceImpl implements InvoiceService {
     @Override
     public InvoiceResponse create(InvoiceRequest request) {
 
+        // Set default currency first
+        if (request.getCurrency() == null || request.getCurrency().isBlank()) {
+            request.setCurrency("INR");
+        }
+
         Invoice invoice = invoiceMapper.toEntity(request);
 
-        invoice.setInvoiceNumber(generateInvoiceNumber());
+        if(request.getInvoiceNumber() == null
+                || request.getInvoiceNumber().isBlank()) {
+
+            invoice.setInvoiceNumber(generateInvoiceNumber());
+
+        } else {
+            invoice.setInvoiceNumber(request.getInvoiceNumber());
+        }
 
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() -> new ResourceNotFoundException("Customer not found"));
@@ -72,26 +84,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setCustomer(customer);
         invoice.setSalesPerson(salesPerson);
 
-        if (request.getTaxMasterId() != null) {
-            TaxMaster taxMaster = taxMasterRepository.findById(request.getTaxMasterId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Tax not found"));
-
-            invoice.setTaxMaster(taxMaster);
-        }
-
         invoice.setInvoiceStatus(
                 request.getInvoiceStatus() != null
                         ? request.getInvoiceStatus()
                         : InvoiceStatus.ACTIVE
         );
 
-        if (request.getCurrency() == null) {
-            request.setCurrency("INR");
-        }
-
-        if (request.getCurrency() == null || request.getCurrency().isBlank()) {
-            request.setCurrency("INR");
-        }
 
         BigDecimal exchangeRate;
 
@@ -119,7 +117,15 @@ public class InvoiceServiceImpl implements InvoiceService {
 
     @Override
     public InvoiceResponse update(Long id, InvoiceRequest request) {
+        System.out.println("========== UPDATE ==========");
+        System.out.println("Invoice ID      : " + id);
+        System.out.println("Customer ID     : " + request.getCustomerId());
+        System.out.println("Sales Person ID : " + request.getSalesPersonId());
+        System.out.println("Currency        : " + request.getCurrency());
 
+        for (InvoiceItemRequest item : request.getItems()) {
+            System.out.println("Item ID : " + item.getItemId());
+        }
         Invoice invoice = invoiceRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Invoice not found"));
@@ -132,10 +138,12 @@ public class InvoiceServiceImpl implements InvoiceService {
         invoice.setCustomerNotes(request.getCustomerNotes());
         invoice.setOrderNumber(request.getOrderNumber());
 
+        System.out.println("CustomerId = " + request.getCustomerId());
+
         Customer customer = customerRepository.findById(request.getCustomerId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Customer not found"));
-
+        System.out.println("SalesPersonId = " + request.getSalesPersonId());
         SalesPerson salesPerson = salesPersonRepository.findById(request.getSalesPersonId())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Sales Person not found"));
@@ -545,19 +553,17 @@ public class InvoiceServiceImpl implements InvoiceService {
             throw new ResourceNotFoundException("Invoice items cannot be empty");
         }
 
-        List<InvoiceItem> invoiceItems = new ArrayList<>();
-
         BigDecimal subTotal = BigDecimal.ZERO;
+
+        // Modify the managed collection
+        invoice.getItems().clear();
 
         for (InvoiceItemRequest dto : itemRequests) {
 
-            if (dto.getItemId() == null) {
-                throw new ResourceNotFoundException("Item ID is missing");
-            }
-
             ItemMaster itemMaster = itemMasterRepository.findById(dto.getItemId())
                     .orElseThrow(() ->
-                            new ResourceNotFoundException("Item not found. ID: " + dto.getItemId()));
+                            new ResourceNotFoundException(
+                                    "Item not found. ID: " + dto.getItemId()));
 
             InvoiceItem item = new InvoiceItem();
 
@@ -573,25 +579,17 @@ public class InvoiceServiceImpl implements InvoiceService {
             item.setQuantity(dto.getQuantity());
             item.setRate(dto.getRate());
 
-            BigDecimal discount = dto.getDiscount() != null
-                    ? dto.getDiscount()
-                    : BigDecimal.ZERO;
+            BigDecimal discount = dto.getDiscount() == null
+                    ? BigDecimal.ZERO
+                    : dto.getDiscount();
 
             item.setDiscount(discount);
-
             item.setTaxPercent(dto.getTaxPercent());
 
-            BigDecimal quantity = dto.getQuantity() != null
-                    ? dto.getQuantity()
-                    : BigDecimal.ZERO;
-
-            BigDecimal rate = dto.getRate() != null
-                    ? dto.getRate()
-                    : BigDecimal.ZERO;
-
-            BigDecimal amount = quantity.multiply(rate);
-
-            amount = amount.subtract(discount);
+            BigDecimal amount =
+                    dto.getQuantity()
+                            .multiply(dto.getRate())
+                            .subtract(discount);
 
             if (amount.compareTo(BigDecimal.ZERO) < 0) {
                 amount = BigDecimal.ZERO;
@@ -603,10 +601,9 @@ public class InvoiceServiceImpl implements InvoiceService {
 
             subTotal = subTotal.add(amount);
 
-            invoiceItems.add(item);
+            invoice.getItems().add(item);
         }
 
-        invoice.setItems(invoiceItems);
         invoice.setSubTotal(subTotal);
     }
 
