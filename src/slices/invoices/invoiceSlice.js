@@ -102,22 +102,36 @@ const initialState = {
 
   // Totals
   subTotal: 0,
+
   discount: 0,
-  discountType: "PERCENTAGE", // PERCENTAGE | AMOUNT
+  discountType: "PERCENTAGE",
+  discountAmount: 0,
+
+  taxableAmount: 0,
+
+  // GST
+  taxMasterId: null,
+  taxName: "",
+  taxType: "",
+  taxRate: 0,
+
+  cgstAmount: 0,
+  sgstAmount: 0,
+  igstAmount: 0,
 
   taxAmount: 0,
-  roundOff: 0,
-  notes: "",
 
-  shippingCharges: 0,
-  adjustment: 0,
-  totalAmount: 0,
-
+  // TDS / TCS
   tdsRate: 0,
   tcsRate: 0,
 
   isTdsEnabled: false,
   isTcsEnabled: false,
+
+  shippingCharges: 0,
+  adjustment: 0,
+
+  totalAmount: 0,
 
   // Invoice Items
   invoiceItems: [makeBlankItem()],
@@ -443,44 +457,107 @@ const invoiceSlice = createSlice({
     setSelectedInvoice: (state, action) => {
       if (!action.payload) return;
 
-      state.selectedInvoice = action.payload;
+      const invoice = action.payload;
 
-      state.invoiceNumber = action.payload.invoiceNumber;
-      state.invoiceDate = action.payload.invoiceDate;
-      state.dueDate = action.payload.dueDate;
-      state.subject = action.payload.subject;
-      state.customerNotes = action.payload.customerNotes;
-      state.terms = action.payload.terms;
-      state.orderNumber = action.payload.orderNumber;
-      state.referenceNumber = action.payload.referenceNumber;
+      state.selectedInvoice = invoice;
 
-      // Store complete objects
-      state.customer = action.payload.customer ?? null;
-      state.salesPerson = action.payload.salesPerson ?? null;
+      // Invoice Details
+      state.invoiceNumber = invoice.invoiceNumber ?? "";
+      state.invoiceDate = invoice.invoiceDate ?? "";
+      state.dueDate = invoice.dueDate ?? "";
 
-      // Optional: keep IDs for dropdowns
-      state.customerId = action.payload.customer?.id ?? "";
-      state.salesPersonId = action.payload.salesPerson?.id ?? "";
+      state.subject = invoice.subject ?? "";
+      state.customerNotes = invoice.customerNotes ?? "";
 
-      state.invoiceItems = action.payload.items?.length
-        ? action.payload.items
-        : [makeBlankItem()];
+      state.terms = invoice.terms ?? "";
 
-      // Store complete item masters
-      state.itemMasters =
-        action.payload.items?.map((item) => item.itemMaster) ?? [];
+      state.orderNumber = invoice.orderNumber ?? "";
+      state.referenceNumber = invoice.referenceNumber ?? "";
 
-      state.subTotal = action.payload.subTotal ?? 0;
-      state.discountAmount = action.payload.discountAmount ?? 0;
-      state.taxAmount = action.payload.taxAmount ?? 0;
-      state.shippingCharges = action.payload.shippingCharges ?? 0;
-      state.adjustment = action.payload.adjustment ?? 0;
-      state.totalAmount = action.payload.totalAmount ?? 0;
-      state.invoiceStatus = action.payload.invoiceStatus ?? "ACTIVE";
+      // Customer
 
-      state.isDirty = true;
+      state.customer = invoice.customer ?? null;
+
+      state.customerId = invoice.customer?.id ?? "";
+
+      state.customerName = invoice.customer?.displayName ?? "";
+
+      // Sales Person
+
+      state.salesPerson = invoice.salesPerson ?? null;
+
+      state.salesPersonId = invoice.salesPerson?.id ?? "";
+
+      // Currency
+
+      state.currency = invoice.currency ?? "INR";
+
+      state.exchangeRate = invoice.exchangeRate ?? 1;
+
+      // Items
+
+      state.invoiceItems = invoice.items?.map((item) => ({
+        id: item.id,
+
+        itemId: item.itemId,
+
+        itemName: item.itemName,
+
+        description: item.description,
+
+        quantity: item.quantity,
+
+        rate: item.rate,
+
+        discount: item.discount ?? 0,
+
+        taxPercent: item.taxPercent ?? 0,
+
+        amount: item.amount,
+      })) || [makeBlankItem()];
+
+      // Amounts
+
+      state.subTotal = invoice.subTotal ?? 0;
+
+      state.discount = invoice.discount ?? 0;
+
+      state.discountType = invoice.discountType ?? "PERCENTAGE";
+
+      state.discountAmount = invoice.discountAmount ?? 0;
+
+      state.taxableAmount = invoice.taxableAmount ?? 0;
+
+      // GST
+
+      state.taxMasterId = invoice.taxMasterId ?? null;
+
+      state.taxName = invoice.taxName ?? "";
+
+      state.taxType = invoice.taxType ?? "";
+
+      state.taxRate = invoice.taxRate ?? 0;
+
+      state.cgstAmount = invoice.cgstAmount ?? 0;
+
+      state.sgstAmount = invoice.sgstAmount ?? 0;
+
+      state.igstAmount = invoice.igstAmount ?? 0;
+
+      state.taxAmount = invoice.taxAmount ?? 0;
+
+      // Other Charges
+
+      state.shippingCharges = invoice.shippingCharges ?? 0;
+
+      state.adjustment = invoice.adjustment ?? 0;
+
+      state.totalAmount = invoice.totalAmount ?? 0;
+
+      state.invoiceStatus = invoice.invoiceStatus ?? "ACTIVE";
+
+      state.isDirty = false;
     },
-
     // ==========================
     // currency
     // ==========================
@@ -705,6 +782,32 @@ const invoiceSlice = createSlice({
 
         state.shippingCharges = invoice.shippingCharges;
         state.adjustment = invoice.adjustment;
+
+        // GST Details
+
+        state.taxMasterId = invoice.taxMasterId ?? null;
+
+        state.taxName = invoice.taxName ?? "";
+
+        state.taxType = invoice.taxType ?? "";
+
+        state.taxRate = invoice.taxRate ?? 0;
+
+        state.taxableAmount = invoice.taxableAmount ?? 0;
+
+        state.cgstAmount = invoice.cgstAmount ?? 0;
+
+        state.sgstAmount = invoice.sgstAmount ?? 0;
+
+        state.igstAmount = invoice.igstAmount ?? 0;
+
+        state.taxAmount = invoice.taxAmount ?? 0;
+
+        state.discount = invoice.discount ?? 0;
+
+        state.discountAmount = invoice.discountAmount ?? 0;
+
+        state.totalAmount = invoice.totalAmount ?? 0;
 
         // Items
         state.invoiceItems = (invoice.items || []).map((item) => ({
@@ -977,14 +1080,8 @@ export const selectDiscountAmount = createSelector(
 );
 
 export const selectTaxAmount = createSelector(
-  [
-    selectSubTotal,
-    selectDiscountAmount,
-    (state) => Number(state.invoice.taxAmount) || 0,
-  ],
-  (subtotal, discountAmount, taxRate) => {
-    const taxableAmount = subtotal - discountAmount;
-
+  [(state) => state.invoice.taxableAmount, (state) => state.invoice.taxRate],
+  (taxableAmount, taxRate) => {
     return (taxableAmount * taxRate) / 100;
   },
 );
@@ -1022,7 +1119,7 @@ export const selectGrandTotal = createSelector(
     (state) => Number(state.invoice.adjustment) || 0,
   ],
   (subtotal, discount, tax, tds, tcs, shipping, adjustment) =>
-    subtotal - discount - tax + tcs - tds + shipping + adjustment,
+    subtotal - discount + tax + tcs - tds + shipping + adjustment,
 );
 
 export const selectInvoiceCount = (state) => state.invoice.totalElements;

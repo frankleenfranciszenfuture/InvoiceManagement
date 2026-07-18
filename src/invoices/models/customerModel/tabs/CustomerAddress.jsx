@@ -12,7 +12,7 @@ const emptyAddress = {
     address2: "",
     city: "",
     state: "",
-    pinCode: "",
+    zipCode: "",
     phoneCode: "+91",
     phone: "",
     fax: "",
@@ -94,9 +94,9 @@ function AddressSection({
 
                 <input
                     type="text"
-                    placeholder="Pin Code"
-                    value={safeAddress.pinCode}
-                    onChange={handleChange("pinCode")}
+                    placeholder="Zip Code"
+                    value={safeAddress.zipCode}
+                    onChange={handleChange("zipCode")}
                     className="w-full border border-gray-300 rounded px-3 py-2"
                 />
 

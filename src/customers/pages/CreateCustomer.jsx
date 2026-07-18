@@ -210,7 +210,7 @@ const AddressColumn = ({
 
                 {/* Pin Code */}
                 <div className="grid grid-cols-[110px_1fr] items-center">
-                    <Label>Pin Code</Label>
+                    <Label>Zip Code</Label>
 
                     <input
                         value={safeAddress.zipCode}

@@ -400,6 +400,9 @@ export default function EditInvoice() {
             ? itemMasters.sellingPrice
             : itemMasters.sellingPrice / exchangeRate.rate;
 
+    //dicount
+
+    const discount = useSelector((state) => state.invoice.discount);
 
     //isDirty
 
@@ -1756,15 +1759,19 @@ export default function EditInvoice() {
                                                 <input
                                                     type="number"
                                                     value={safeNumber(item.quantity)}
-                                                    onChange={(e) =>
+                                                    onChange={(e) => {
+                                                        const quantity = Number(e.target.value) || 0;
+
                                                         dispatch(
                                                             updateItem({
                                                                 id: item.id,
-                                                                field: "quantity",
-                                                                value: parseFloat(e.target.value),
-                                                            }),
-                                                        )
-                                                    }
+                                                                updatedFields: {
+                                                                    quantity,
+                                                                    amount: quantity * (Number(item.rate) || 0),
+                                                                },
+                                                            })
+                                                        );
+                                                    }}
                                                     className="w-full text-right text-sm focus:outline-none bg-transparent border-b border-transparent focus:border-blue-400"
                                                 />
                                             </td>
@@ -1783,21 +1790,25 @@ export default function EditInvoice() {
                                                     <input
                                                         type="number"
                                                         value={safeNumber(item.rate)}
-                                                        onChange={(e) =>
+                                                        onChange={(e) => {
+                                                            const rate = Number(e.target.value) || 0;
+
                                                             dispatch(
                                                                 updateItem({
                                                                     id: item.id,
-                                                                    field: "rate",
-                                                                    value: parseFloat(e.target.value) || 0,
+                                                                    updatedFields: {
+                                                                        rate,
+                                                                        amount: (Number(item.quantity) || 0) * rate,
+                                                                    },
                                                                 })
-                                                            )
-                                                        }
+                                                            );
+                                                        }}
                                                         className="w-24 text-right text-sm focus:outline-none bg-transparent border-b border-transparent focus:border-blue-400"
                                                     />
                                                 </div>
                                             </td>
                                             <td className="px-4 py-3 text-right text-sm font-semibold text-gray-800">
-                                                {fmt(item.amount)}
+                                                {fmt((Number(item.quantity) || 0) * (Number(item.rate) || 0))}
                                             </td>
                                             <td className="px-2 py-3">
                                                 {invoiceItems.length > 1 && (
@@ -1866,7 +1877,7 @@ export default function EditInvoice() {
 
                                                 <input
                                                     type="number"
-                                                    value={invoice.discount ?? ""}
+                                                    value={discount ?? ""}
                                                     onChange={(e) =>
                                                         dispatch(
                                                             updateInvoiceField({
@@ -1932,7 +1943,7 @@ export default function EditInvoice() {
                                                 </div>
 
                                                 <div className="w-20 text-right">
-                                                    {fmt(taxAmount)}
+                                                    - {fmt(taxAmount)}
                                                 </div>
 
                                             </div>

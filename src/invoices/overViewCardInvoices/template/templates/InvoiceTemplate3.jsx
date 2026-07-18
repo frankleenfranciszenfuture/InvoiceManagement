@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from "react-redux";
 import { loadInvoices } from '../../../../slices/invoices/thunks/invoiceThunks';
 import {
@@ -9,6 +9,7 @@ import {
     updateTax,
 } from "../../../../slices/invoices/invoiceSlice";
 
+import { assets } from "../../../../assets/assets";
 import { closeModal } from "../../../../slices/Ui/uiSlice";
 import StatusBadge from "../../../overViewCardInvoices/components/StatusBadge";
 import { fmt } from "../../../overViewCardInvoices/components/helper";
@@ -19,6 +20,8 @@ import { formatCurrency } from '../../../utils/formatCurrency';
 export default function InvoiceTemplate3({ invoice: invoiceProp }) {
 
     const dispatch = useDispatch();
+
+    const [image, setImage] = useState(localStorage.getItem("logoImage") || null);
 
     const { invoices } = useSelector((state) => state.invoice);
 
@@ -87,6 +90,26 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
         }
     };
 
+    //image
+    const handleImageChange = (e) => {
+        const file = e.target.files[0];
+
+        if (file) {
+            const reader = new FileReader();
+
+            reader.onload = () => {
+                setImage(reader.result);
+                localStorage.setItem("companyLogo", reader.result);
+            };
+
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const openFilePicker = () => {
+        document.getElementById("logo-upload").click();
+    };
+
     return (
         <div className="bg-gray-100 py-8">
             <div className="mx-auto w-[210mm] min-h-[297mm] bg-white border border-black text-[13px] text-gray-900">
@@ -99,9 +122,9 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                             TAX INVOICE
                         </h1>
 
-                        {/* <span className="absolute right-8 text-xs tracking-widest">
+                        <span className="absolute right-45 text-xs tracking-widest">
                             ORIGINAL FOR RECIPIENT
-                        </span> */}
+                        </span>
                     </div>
 
                     <div className="grid grid-cols-2">
@@ -110,27 +133,41 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
 
                         <div className="border-r border-black p-4">
 
-                            <div className="flex gap-4">
+                            <div className="flex gap-4 ">
 
-                                <img
-                                    src="/logo.png"
-                                    className="w-28 h-28 object-contain"
-                                />
+                                <>
+                                    <img
+                                        src={image || assets.zenfuture}
+                                        alt="Logo"
+                                        onClick={openFilePicker}
+                                        className="w-28 h-28 object-contain rounded-xl cursor-pointer"
+                                    />
 
+                                    <input
+                                        id="logo-upload"
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={handleImageChange}
+                                    />
+                                </>
                                 <div>
-                                    <h2 className="font-bold text-xl">
-                                        COMPANY NAME
+                                    <h2 className="font-bold text-lg">
+                                        ZENFUTURE TECHNOLOGY
                                     </h2>
 
                                     <p>GSTIN : 27XXXXX</p>
 
-                                    <p>Address Line 1</p>
+                                    <p>First Floor, No 3, 313A</p>
 
-                                    <p>Address Line 2</p>
+                                    <p> Krishnagiri Main Road,</p>
 
-                                    <p>Mobile : 9999999999</p>
+                                    <p> Dharmapuri, Tamil Nadu- 636701</p>
 
-                                    <p>Email : info@company.com</p>
+
+                                    <p>Mobile :  090929 79396</p>
+
+                                    <p className="font-semibold text-blue-800"> https://www.zenfuture.in/</p>
                                 </div>
 
                             </div>
@@ -144,19 +181,20 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                             <div className="grid grid-cols-2">
 
                                 <div className="border-b border-r border-black p-3">
-                                    <p className="font-semibold">Invoice #</p>
-                                    <p> {" "}
+                                    <p className="font-semibold">Invoice #:</p>
+                                    <p className="font-bold text-sm"> {" "}
                                         {invoice.invoiceNumber}</p>
                                 </div>
 
                                 <div className="border-b border-black p-3">
                                     <p className="font-semibold">
-                                        Invoice Date
+                                        Invoice Date:
                                     </p>
-                                    <p>17 Jun 2023</p>
+                                    <p className="font-bold text-sm">
+                                        {invoice.invoiceDate}</p>
                                 </div>
 
-                                <div className="border-r border-black p-3">
+                                <div className="border-r border-black p-3 ">
                                     <p className="font-semibold">
                                         Place of Supply
                                     </p>
@@ -167,9 +205,10 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                                     <p className="font-semibold">
                                         Due Date
                                     </p>
-                                    <p>17 Jun 2023</p>
+                                    <p className="font-bold text-sm">
+                                        {invoice.dueDate}</p>
                                 </div>
-
+                                <div className="border-r border-black p-8"></div>
                             </div>
 
                         </div>
@@ -183,13 +222,15 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                 <div className="grid grid-cols-2 border-b border-black">
 
                     <div className="border-r border-black p-3">
-                        <h3 className="font-bold mb-2">
-                            Customer Details
-                            Billing Address Address
+                        <h3 className="font-bold text-md mb-2">
+                            Customer Details :
+                            <p className="font-bold text-md mb-2">
+                                {invoice.customer?.displayName || ""}
+                            </p>
                         </h3>
 
-                        <p className="font-semibold">
-                            {invoice.customer?.displayName || ""}
+                        <p className="font-bold text-md">
+                            Billing Address Address
                         </p>
 
                         <p>{invoice.customer?.billingAddress?.address}</p>
@@ -219,13 +260,13 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
 
                     <thead>
 
-                        <tr className="border-b border-black bg-gray-50">
+                        <tr className="border-b border-black bg-gray-50 ">
 
                             {[
                                 "#",
                                 "Item",
                                 "HSN",
-                                "Rate",
+                                "Rate/Item",
                                 "Qty",
                                 "Taxable",
                                 "Tax",
@@ -233,7 +274,7 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                             ].map((h) => (
                                 <th
                                     key={h}
-                                    className="border-r border-black p-2 text-left font-semibold"
+                                    className="border-r border-black p-3 text-right font-semibold"
                                 >
                                     {h}
                                 </th>
@@ -242,7 +283,7 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                         </tr>
 
                     </thead>
-                    <tbody>
+                    <tbody className="border-r border-black p-2 text-right">
                         {items.length > 0 ? (
                             items.map((item, index) => {
                                 const taxable = (item.rate || 0) * (item.quantity || 0);
@@ -304,7 +345,7 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
 
                     <div className="flex">
 
-                        <div className="w-1/2 border-r border-black p-3">
+                        <div className="w-1/2 border-r border-black font-bold text-md p-3">
                             Total Items : {items.length}
                         </div>
                         <div className="w-1/2">
@@ -329,7 +370,7 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
                                         </td>
 
                                         <td className="p-2 text-right">
-                                            {formatCurrency(invoice.taxAmount, invoice.currency)}
+                                            {formatCurrency(invoice.gstAmount, invoice.currency)}
                                         </td>
                                     </tr>
                                     {Number(invoice.shippingCharges) > 0 && (
@@ -528,7 +569,7 @@ export default function InvoiceTemplate3({ invoice: invoiceProp }) {
 
                 </div>
 
-            </div>
-        </div>
+            </div >
+        </div >
     );
 }

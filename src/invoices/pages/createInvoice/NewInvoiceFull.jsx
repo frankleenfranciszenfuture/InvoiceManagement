@@ -1870,7 +1870,7 @@ export default function NewInvoiceFull() {
                                                 </div>
 
                                                 <div className="w-20 text-right">
-                                                    {fmt(taxAmount)}
+                                                    -{fmt(taxAmount)}
                                                 </div>
 
                                             </div>
